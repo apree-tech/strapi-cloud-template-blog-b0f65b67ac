@@ -1,7 +1,41 @@
 'use strict';
 
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../../middlewares/jwt');
+const crypto = require('crypto');
+const { generateToken } = require('../../../middlewares/jwt');
+
+// Rate limiting storage
+const loginAttempts = new Map();
+
+const getSessionId = (ctx) => {
+  const ip = ctx.request.ip || ctx.ip;
+  const userAgent = ctx.request.headers['user-agent'] || '';
+  return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+};
+
+const checkRateLimit = (sessionId) => {
+  const now = Date.now();
+  const attempts = loginAttempts.get(sessionId) || [];
+
+  // Remove attempts older than 2 minutes
+  const recentAttempts = attempts.filter(time => now - time < 2 * 60 * 1000);
+
+  if (recentAttempts.length >= 6) {
+    throw new Error('blocked');
+  }
+
+  return recentAttempts;
+};
+
+const recordFailedAttempt = (sessionId, recentAttempts) => {
+  recentAttempts.push(Date.now());
+  loginAttempts.set(sessionId, recentAttempts);
+  return recentAttempts.length;
+};
+
+const clearAttempts = (sessionId) => {
+  loginAttempts.delete(sessionId);
+};
 
 module.exports = {
   async authenticate(ctx) {
@@ -9,6 +43,19 @@ module.exports = {
 
     if (!password) {
       return ctx.badRequest('Password is required');
+    }
+
+    const sessionId = getSessionId(ctx);
+
+    // Check rate limit
+    let recentAttempts;
+    try {
+      recentAttempts = checkRateLimit(sessionId);
+    } catch (error) {
+      if (error.message === 'blocked') {
+        return ctx.tooManyRequests('Too many login attempts. Please try again later.');
+      }
+      throw error;
     }
 
     try {
@@ -20,6 +67,9 @@ module.exports = {
       for (const account of accounts) {
         const accountPassword = account.password;
         if (accountPassword && await bcrypt.compare(password, accountPassword)) {
+          // Clear attempts on successful login
+          clearAttempts(sessionId);
+
           const payload = {
             id: account.documentId || account.id,
             name: account.name,
@@ -45,6 +95,9 @@ module.exports = {
       for (const model of models) {
         const modelPassword = model.password;
         if (modelPassword && await bcrypt.compare(password, modelPassword)) {
+          // Clear attempts on successful login
+          clearAttempts(sessionId);
+
           const payload = {
             id: model.documentId || model.id,
             name: model.name,
@@ -58,6 +111,19 @@ module.exports = {
             token,
           };
         }
+      }
+
+      // Record failed attempt and get total count
+      const attemptsCount = recordFailedAttempt(sessionId, recentAttempts);
+      const remainingAttempts = 6 - attemptsCount;
+
+      // Return error with remaining attempts info only when 2 or 1 attempts left
+      if (remainingAttempts === 2 || remainingAttempts === 1) {
+        ctx.status = 401;
+        return ctx.body = {
+          error: 'Invalid password',
+          remainingAttempts
+        };
       }
 
       return ctx.unauthorized('Invalid password');

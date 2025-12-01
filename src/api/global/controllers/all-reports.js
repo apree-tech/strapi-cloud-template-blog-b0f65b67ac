@@ -1,6 +1,6 @@
 'use strict';
 
-const { verifyToken } = require('../../middlewares/jwt');
+const { verifyToken } = require('../../../middlewares/jwt');
 
 module.exports = {
   async getAllReports(ctx) {
