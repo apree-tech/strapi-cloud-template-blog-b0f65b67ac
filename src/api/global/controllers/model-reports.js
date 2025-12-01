@@ -6,20 +6,13 @@ module.exports = {
   async getModelReports(ctx) {
     const token = ctx.request.headers.authorization?.replace('Bearer ', '');
 
-    console.log('[model-reports] Authorization header:', ctx.request.headers.authorization?.substring(0, 50) + '...');
-    console.log('[model-reports] Token extracted:', token?.substring(0, 50) + '...');
-
     if (!token) {
-      console.log('[model-reports] No token provided');
       return ctx.unauthorized('No token provided');
     }
 
     const user = verifyToken(token);
 
-    console.log('[model-reports] Verified user:', user);
-
     if (!user) {
-      console.log('[model-reports] Token verification failed');
       return ctx.unauthorized('Invalid token');
     }
 
