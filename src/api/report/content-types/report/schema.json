@@ -9,7 +9,14 @@
   "options": {
     "draftAndPublish": true
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
   "attributes": {
     "title": {
       "type": "string",
@@ -21,6 +28,12 @@
       "target": "api::model.model",
       "inversedBy": "reports"
     },
+    "accounts": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::account.account",
+      "mappedBy": "reports"
+    },
     "uuid": {
       "type": "uid",
       "required": true
@@ -31,10 +44,6 @@
     },
     "dateTo": {
       "type": "date",
-      "required": true
-    },
-    "password": {
-      "type": "string",
       "required": true
     },
     "content_blocks": {

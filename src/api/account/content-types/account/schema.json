@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "accounts",
+  "info": {
+    "singularName": "account",
+    "pluralName": "accounts",
+    "displayName": "Account"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "role": {
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "type": "string",
+      "required": true,
+      "private": true,
+      "unique": true
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report",
+      "inversedBy": "accounts"
+    },
+    "isAdmin": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
