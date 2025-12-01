@@ -2,6 +2,10 @@
 
 module.exports = {
   async getReport(ctx) {
+    // SECURITY: userType comes from request body - can be spoofed
+    // Needs session/JWT to verify actual user type
+    return ctx.forbidden('This endpoint requires proper authentication');
+
     try {
       const { uuid, userType } = ctx.request.body;
 

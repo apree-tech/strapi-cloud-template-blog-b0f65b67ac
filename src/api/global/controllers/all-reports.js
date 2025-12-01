@@ -2,6 +2,10 @@
 
 module.exports = {
   async getAllReports(ctx) {
+    // SECURITY: This endpoint should only be accessible to admins
+    // For now, reject all requests until proper authentication is implemented
+    return ctx.forbidden('This endpoint requires admin authentication');
+
     try {
       // Fetch all reports (both published and drafts) by querying the database directly
       // In Strapi 5, we need to get all versions including drafts and published

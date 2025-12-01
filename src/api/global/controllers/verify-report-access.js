@@ -2,6 +2,10 @@
 
 module.exports = {
   async verifyAccess(ctx) {
+    // SECURITY: userId, userType, isAdmin all come from request body
+    // Anyone can claim to be admin. Needs session/JWT authentication.
+    return ctx.forbidden('This endpoint requires proper authentication');
+
     try {
       const { reportId, userId, userType, isAdmin } = ctx.request.body;
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const bcrypt = require('bcryptjs');
+
 module.exports = {
   async authenticate(ctx) {
     const { password } = ctx.request.body;
@@ -16,7 +18,7 @@ module.exports = {
 
       for (const account of accounts) {
         const accountPassword = account.password;
-        if (accountPassword && password === accountPassword) {
+        if (accountPassword && await bcrypt.compare(password, accountPassword)) {
           return {
             id: account.documentId || account.id,
             name: account.name,
@@ -34,7 +36,7 @@ module.exports = {
 
       for (const model of models) {
         const modelPassword = model.password;
-        if (modelPassword && password === modelPassword) {
+        if (modelPassword && await bcrypt.compare(password, modelPassword)) {
           return {
             id: model.documentId || model.id,
             name: model.name,

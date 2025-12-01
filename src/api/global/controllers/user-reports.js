@@ -2,6 +2,10 @@
 
 module.exports = {
   async getUserReports(ctx) {
+    // SECURITY: This endpoint is vulnerable - userId comes from request body
+    // Anyone can request any user's reports. Needs session/JWT authentication.
+    return ctx.forbidden('This endpoint requires proper authentication');
+
     try {
       const { userId } = ctx.request.body;
 

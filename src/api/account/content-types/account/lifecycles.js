@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+
 module.exports = {
   async beforeCreate(event) {
     const { data } = event.params;
@@ -17,16 +19,9 @@ module.exports = {
     }
 
     if (data.password) {
-      // Check if password already exists in models
-      const models = await strapi.entityService.findMany('api::model.model', {
-        fields: ['password'],
-      });
-
-      for (const model of models) {
-        if (model.password && data.password === model.password) {
-          throw new Error('This password is already used by a model');
-        }
-      }
+      // Hash password before storing
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
     }
   },
 
@@ -57,16 +52,9 @@ module.exports = {
     }
 
     if (data.password) {
-      // Check if password already exists in models
-      const models = await strapi.entityService.findMany('api::model.model', {
-        fields: ['password'],
-      });
-
-      for (const model of models) {
-        if (model.password && data.password === model.password) {
-          throw new Error('This password is already used by a model');
-        }
-      }
+      // Hash password before storing
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
     }
   },
 };

@@ -3,7 +3,7 @@ const config = {
 };
 
 const bootstrap = (app) => {
-  console.log('Admin app loaded');
+  // Admin app initialization
 };
 
 export default {
