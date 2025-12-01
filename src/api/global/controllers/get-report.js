@@ -1,16 +1,26 @@
 'use strict';
 
+const { verifyToken } = require('../../middlewares/jwt');
+
 module.exports = {
   async getReport(ctx) {
-    // SECURITY: userType comes from request body - can be spoofed
-    // Needs session/JWT to verify actual user type
-    return ctx.forbidden('This endpoint requires proper authentication');
+    const token = ctx.request.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return ctx.unauthorized('No token provided');
+    }
+
+    const user = verifyToken(token);
+
+    if (!user) {
+      return ctx.unauthorized('Invalid token');
+    }
 
     try {
-      const { uuid, userType } = ctx.request.body;
+      const { uuid } = ctx.request.body;
 
-      if (!uuid || !userType) {
-        return ctx.badRequest('uuid and userType are required');
+      if (!uuid) {
+        return ctx.badRequest('uuid is required');
       }
 
       // Build the where clause
@@ -19,7 +29,7 @@ module.exports = {
       };
 
       // Models can only see published reports
-      if (userType === 'model') {
+      if (user.type === 'model') {
         whereClause.publishedAt = {
           $ne: null,
         };

@@ -1,6 +1,7 @@
 'use strict';
 
 const bcrypt = require('bcryptjs');
+const { generateToken } = require('../../middlewares/jwt');
 
 module.exports = {
   async authenticate(ctx) {
@@ -19,12 +20,19 @@ module.exports = {
       for (const account of accounts) {
         const accountPassword = account.password;
         if (accountPassword && await bcrypt.compare(password, accountPassword)) {
-          return {
+          const payload = {
             id: account.documentId || account.id,
             name: account.name,
             role: account.role,
             type: 'user',
             isAdmin: account.isAdmin || false,
+          };
+
+          const token = generateToken(payload);
+
+          return {
+            ...payload,
+            token,
           };
         }
       }
@@ -37,10 +45,17 @@ module.exports = {
       for (const model of models) {
         const modelPassword = model.password;
         if (modelPassword && await bcrypt.compare(password, modelPassword)) {
-          return {
+          const payload = {
             id: model.documentId || model.id,
             name: model.name,
             type: 'model',
+          };
+
+          const token = generateToken(payload);
+
+          return {
+            ...payload,
+            token,
           };
         }
       }

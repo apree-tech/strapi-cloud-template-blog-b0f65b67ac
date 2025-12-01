@@ -1,36 +1,46 @@
 'use strict';
 
+const { verifyToken } = require('../../middlewares/jwt');
+
 module.exports = {
   async verifyAccess(ctx) {
-    // SECURITY: userId, userType, isAdmin all come from request body
-    // Anyone can claim to be admin. Needs session/JWT authentication.
-    return ctx.forbidden('This endpoint requires proper authentication');
+    const token = ctx.request.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return ctx.unauthorized('No token provided');
+    }
+
+    const user = verifyToken(token);
+
+    if (!user) {
+      return ctx.unauthorized('Invalid token');
+    }
 
     try {
-      const { reportId, userId, userType, isAdmin } = ctx.request.body;
+      const { reportId } = ctx.request.body;
 
-      if (!reportId || !userId || !userType) {
-        return ctx.badRequest('reportId, userId, and userType are required');
+      if (!reportId) {
+        return ctx.badRequest('reportId is required');
       }
 
       // For admins, check if report exists
-      if (isAdmin && userType === 'user') {
+      if (user.isAdmin && user.type === 'user') {
         const report = await strapi.db.query('api::report.report').findOne({
           where: {
             uuid: reportId,
           },
         });
 
-        return { hasAccess: !!report };
+        return { hasAccess: !!report, isAdmin: true };
       }
 
       // For regular users, check if they are in the report's accounts
-      if (userType === 'user') {
+      if (user.type === 'user') {
         const report = await strapi.db.query('api::report.report').findOne({
           where: {
             uuid: reportId,
             accounts: {
-              document_id: userId,
+              document_id: user.id,
             },
           },
           populate: {
@@ -44,12 +54,12 @@ module.exports = {
       }
 
       // For models, check if report belongs to them and is published
-      if (userType === 'model') {
+      if (user.type === 'model') {
         const report = await strapi.db.query('api::report.report').findOne({
           where: {
             uuid: reportId,
             model: {
-              document_id: userId,
+              document_id: user.id,
             },
             publishedAt: {
               $ne: null,
