@@ -107,6 +107,36 @@ export interface ReportComponentsSection extends Struct.ComponentSchema {
   };
 }
 
+export interface ReportComponentsSocialMediaStats
+  extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_social_media_stats';
+  info: {
+    description: '\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0430 \u0441\u043E\u0446\u0441\u0435\u0442\u0435\u0439 \u0441 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u043C \u0440\u0430\u0441\u0447\u0451\u0442\u043E\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439';
+    displayName: 'Social Media Stats';
+  };
+  attributes: {
+    contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
+      Schema.Attribute.DefaultTo<'w100'>;
+    metrics: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.social-metrics'>;
+  };
+}
+
+export interface ReportComponentsSocialMetric extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_social_metrics';
+  info: {
+    description: '\u041C\u0435\u0442\u0440\u0438\u043A\u0430 \u0441\u043E\u0446\u0441\u0435\u0442\u0438 \u0441 \u043F\u0440\u043E\u0448\u043B\u044B\u043C \u0438 \u0442\u0435\u043A\u0443\u0449\u0438\u043C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435\u043C';
+    displayName: 'Social Metric';
+  };
+  attributes: {
+    change_indicator: Schema.Attribute.String;
+    change_percent: Schema.Attribute.Decimal;
+    current_value: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    metric_name: Schema.Attribute.String & Schema.Attribute.Required;
+    prev_value: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
 export interface ReportComponentsTableData extends Struct.ComponentSchema {
   collectionName: 'components_report_components_table_data';
   info: {
@@ -210,6 +240,8 @@ declare module '@strapi/strapi' {
       'report-components.metric-group': ReportComponentsMetricGroup;
       'report-components.metric-item': ReportComponentsMetricItem;
       'report-components.section': ReportComponentsSection;
+      'report-components.social-media-stats': ReportComponentsSocialMediaStats;
+      'report-components.social-metric': ReportComponentsSocialMetric;
       'report-components.table-data': ReportComponentsTableData;
       'report-components.text-block': ReportComponentsTextBlock;
       'shared.media': SharedMedia;

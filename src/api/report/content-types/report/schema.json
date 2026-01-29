@@ -55,7 +55,8 @@
         "report-components.text-block",
         "report-components.chart-block",
         "report-components.table-data",
-        "report-components.section"
+        "report-components.section",
+        "report-components.social-media-stats"
       ]
     }
   }

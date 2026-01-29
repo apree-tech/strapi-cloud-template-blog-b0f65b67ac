@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_report_components_social_metrics",
+  "info": {
+    "displayName": "Social Metric",
+    "description": "Метрика соцсети с прошлым и текущим значением"
+  },
+  "options": {},
+  "attributes": {
+    "metric_name": {
+      "type": "string",
+      "required": true
+    },
+    "prev_value": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "current_value": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "change_percent": {
+      "type": "decimal"
+    },
+    "change_indicator": {
+      "type": "string"
+    }
+  }
+}

@@ -3,6 +3,13 @@
 module.exports = {
   register({ strapi }) {
     strapi.log.info('[Collaborative Editing] Plugin registered');
+
+    // Register custom field for social metrics table
+    strapi.customFields.register({
+      name: 'social-metrics',
+      plugin: 'collaborative-editing',
+      type: 'json',
+    });
   },
 
   bootstrap({ strapi }) {
