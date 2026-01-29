@@ -1,0 +1,32 @@
+{
+  "name": "collaborative-editing",
+  "version": "1.0.0",
+  "description": "Real-time collaborative editing for Strapi reports",
+  "strapi": {
+    "name": "collaborative-editing",
+    "displayName": "Collaborative Editing",
+    "description": "Real-time collaborative editing with active user indicators",
+    "kind": "plugin"
+  },
+  "main": "./server/index.js",
+  "exports": {
+    "./strapi-admin": {
+      "source": "./admin/src/index.jsx",
+      "import": "./admin/src/index.jsx",
+      "require": "./admin/src/index.jsx",
+      "default": "./admin/src/index.jsx"
+    },
+    "./strapi-server": {
+      "source": "./server/index.js",
+      "import": "./server/index.js",
+      "require": "./server/index.js",
+      "default": "./server/index.js"
+    }
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.0"
+  },
+  "peerDependencies": {
+    "@strapi/strapi": "^5.0.0"
+  }
+}

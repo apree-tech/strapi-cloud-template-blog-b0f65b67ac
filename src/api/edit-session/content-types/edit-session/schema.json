@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "edit_sessions",
+  "info": {
+    "singularName": "edit-session",
+    "pluralName": "edit-sessions",
+    "displayName": "Edit Session",
+    "description": "Tracks active editing sessions for collaborative editing"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "report_document_id": {
+      "type": "string",
+      "required": true
+    },
+    "user_id": {
+      "type": "integer",
+      "required": true
+    },
+    "user_name": {
+      "type": "string",
+      "required": true
+    },
+    "user_role": {
+      "type": "string"
+    },
+    "socket_id": {
+      "type": "string",
+      "required": true
+    },
+    "connected_at": {
+      "type": "datetime",
+      "required": true
+    },
+    "last_activity": {
+      "type": "datetime",
+      "required": true
+    },
+    "current_field": {
+      "type": "string"
+    },
+    "cursor_position": {
+      "type": "json"
+    }
+  }
+}

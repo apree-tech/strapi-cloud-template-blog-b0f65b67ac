@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "report_versions",
+  "info": {
+    "singularName": "report-version",
+    "pluralName": "report-versions",
+    "displayName": "Report Version",
+    "description": "Stores version snapshots for reports"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "report_document_id": {
+      "type": "string",
+      "required": true
+    },
+    "version_number": {
+      "type": "integer",
+      "required": true
+    },
+    "version_label": {
+      "type": "string"
+    },
+    "snapshot_data": {
+      "type": "json",
+      "required": true
+    },
+    "user_ids": {
+      "type": "json"
+    },
+    "user_names": {
+      "type": "string",
+      "required": true
+    },
+    "created_at_snapshot": {
+      "type": "datetime",
+      "required": true
+    },
+    "change_summary": {
+      "type": "text"
+    },
+    "is_auto_save": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

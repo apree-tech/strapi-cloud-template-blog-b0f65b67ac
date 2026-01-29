@@ -416,6 +416,103 @@ export interface ApiAccountAccount extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiEditOperationEditOperation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'edit_operations';
+  info: {
+    description: 'Stores all editing operations for conflict resolution and audit';
+    displayName: 'Edit Operation';
+    pluralName: 'edit-operations';
+    singularName: 'edit-operation';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    applied: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    conflict_resolved: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    field_path: Schema.Attribute.String & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::edit-operation.edit-operation'
+    > &
+      Schema.Attribute.Private;
+    new_value: Schema.Attribute.JSON;
+    old_value: Schema.Attribute.JSON;
+    operation_type: Schema.Attribute.Enumeration<
+      ['insert', 'update', 'delete']
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    report_document_id: Schema.Attribute.String & Schema.Attribute.Required;
+    sequence_number: Schema.Attribute.BigInteger & Schema.Attribute.Required;
+    timestamp: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user_id: Schema.Attribute.Integer & Schema.Attribute.Required;
+    user_name: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
+export interface ApiEditSessionEditSession extends Struct.CollectionTypeSchema {
+  collectionName: 'edit_sessions';
+  info: {
+    description: 'Tracks active editing sessions for collaborative editing';
+    displayName: 'Edit Session';
+    pluralName: 'edit-sessions';
+    singularName: 'edit-session';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    connected_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    current_field: Schema.Attribute.String;
+    cursor_position: Schema.Attribute.JSON;
+    last_activity: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::edit-session.edit-session'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    report_document_id: Schema.Attribute.String & Schema.Attribute.Required;
+    socket_id: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user_id: Schema.Attribute.Integer & Schema.Attribute.Required;
+    user_name: Schema.Attribute.String & Schema.Attribute.Required;
+    user_role: Schema.Attribute.String;
+  };
+}
+
 export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
   collectionName: 'globals';
   info: {
@@ -477,6 +574,52 @@ export interface ApiModelModel extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface ApiReportVersionReportVersion
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'report_versions';
+  info: {
+    description: 'Stores version snapshots for reports';
+    displayName: 'Report Version';
+    pluralName: 'report-versions';
+    singularName: 'report-version';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    change_summary: Schema.Attribute.Text;
+    created_at_snapshot: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    is_auto_save: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report-version.report-version'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    report_document_id: Schema.Attribute.String & Schema.Attribute.Required;
+    snapshot_data: Schema.Attribute.JSON & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user_ids: Schema.Attribute.JSON;
+    user_names: Schema.Attribute.String & Schema.Attribute.Required;
+    version_label: Schema.Attribute.String;
+    version_number: Schema.Attribute.Integer & Schema.Attribute.Required;
   };
 }
 
@@ -1042,8 +1185,11 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::account.account': ApiAccountAccount;
+      'api::edit-operation.edit-operation': ApiEditOperationEditOperation;
+      'api::edit-session.edit-session': ApiEditSessionEditSession;
       'api::global.global': ApiGlobalGlobal;
       'api::model.model': ApiModelModel;
+      'api::report-version.report-version': ApiReportVersionReportVersion;
       'api::report.report': ApiReportReport;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

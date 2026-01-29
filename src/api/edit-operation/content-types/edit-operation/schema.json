@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "edit_operations",
+  "info": {
+    "singularName": "edit-operation",
+    "pluralName": "edit-operations",
+    "displayName": "Edit Operation",
+    "description": "Stores all editing operations for conflict resolution and audit"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "report_document_id": {
+      "type": "string",
+      "required": true
+    },
+    "user_id": {
+      "type": "integer",
+      "required": true
+    },
+    "user_name": {
+      "type": "string",
+      "required": true
+    },
+    "operation_type": {
+      "type": "enumeration",
+      "enum": ["insert", "update", "delete"],
+      "required": true
+    },
+    "field_path": {
+      "type": "string",
+      "required": true
+    },
+    "old_value": {
+      "type": "json"
+    },
+    "new_value": {
+      "type": "json"
+    },
+    "timestamp": {
+      "type": "datetime",
+      "required": true
+    },
+    "sequence_number": {
+      "type": "biginteger",
+      "required": true
+    },
+    "applied": {
+      "type": "boolean",
+      "default": false
+    },
+    "conflict_resolved": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
