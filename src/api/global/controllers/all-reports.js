@@ -12,7 +12,8 @@ module.exports = {
 
     const user = verifyToken(token);
 
-    if (!user || user.type !== 'user' || !user.isAdmin) {
+    // Allow admin users (type='user' with isAdmin=true) OR head_pm users
+    if (!user || !(user.isAdmin || user.type === 'head_pm')) {
       return ctx.forbidden('Admin access required');
     }
 

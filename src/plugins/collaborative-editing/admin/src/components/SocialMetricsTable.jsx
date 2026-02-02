@@ -51,15 +51,17 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     }
   }, []);
 
-  // Validate number
+  // Validate number (supports decimals with dot or comma)
   const validateNumber = (str) => {
     if (!str && str !== 0) return { valid: true, value: 0 };
     const cleaned = String(str).replace(/\s/g, '');
     if (cleaned === '') return { valid: true, value: 0 };
-    if (!/^\d+$/.test(cleaned)) {
+    // Allow integers and decimals with dot or comma
+    if (!/^\d+([.,]\d+)?$/.test(cleaned)) {
       return { valid: false, error: 'Только числа' };
     }
-    const num = parseInt(cleaned, 10);
+    // Replace comma with dot for parsing
+    const num = parseFloat(cleaned.replace(',', '.'));
     if (num < 0) {
       return { valid: false, error: 'Минимум: 0' };
     }
@@ -85,10 +87,13 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     return '➡️';
   };
 
-  // Format number with spaces
+  // Format number with spaces (supports decimals)
   const formatNumber = (num) => {
     if (!num && num !== 0) return '';
-    return new Intl.NumberFormat('ru-RU').format(num);
+    return new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(num);
   };
 
   // Check if there are any errors
