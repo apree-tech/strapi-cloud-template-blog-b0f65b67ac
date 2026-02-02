@@ -4,6 +4,8 @@ import CollaborativeIndicator from './components/CollaborativeIndicator';
 import HistoryPanel from './components/HistoryPanel';
 import VersionsPanel from './components/VersionsPanel';
 import SocialMetricsTable from './components/SocialMetricsTable';
+import TableDataEditor from './components/TableDataEditor';
+import CopyFromPreviousPanel from './components/CopyFromPreviousPanel';
 
 // Panel component for Edit View sidebar
 const ActiveEditorsSidePanel = ({ document, model, collectionType }) => {
@@ -39,6 +41,18 @@ const VersionsSidePanel = ({ document, model, collectionType }) => {
   return {
     title: 'Версии документа',
     content: <VersionsPanel documentId={document?.documentId} />,
+  };
+};
+
+// Copy From Previous Panel for Edit View sidebar
+const CopyFromPreviousSidePanel = ({ document, model, collectionType }) => {
+  if (model !== 'api::report.report') {
+    return null;
+  }
+
+  return {
+    title: 'Копирование данных',
+    content: <CopyFromPreviousPanel documentId={document?.documentId} />,
   };
 };
 
@@ -79,6 +93,24 @@ export default {
       },
       components: {
         Input: async () => ({ default: SocialMetricsTable }),
+      },
+    });
+
+    // Register custom field for table data editor
+    app.customFields.register({
+      name: 'table-editor',
+      pluginId: pluginId,
+      type: 'json',
+      intlLabel: {
+        id: `${pluginId}.table-editor.label`,
+        defaultMessage: 'Редактор таблицы',
+      },
+      intlDescription: {
+        id: `${pluginId}.table-editor.description`,
+        defaultMessage: 'Визуальный редактор таблицы с колонками и строками',
+      },
+      components: {
+        Input: async () => ({ default: TableDataEditor }),
       },
     });
   },
@@ -204,6 +236,7 @@ export default {
     if (contentManagerApis.addEditViewSidePanel) {
       try {
         contentManagerApis.addEditViewSidePanel([
+          CopyFromPreviousSidePanel,
           ActiveEditorsSidePanel,
           HistorySidePanel,
           VersionsSidePanel,

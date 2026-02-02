@@ -10,6 +10,13 @@ module.exports = {
       plugin: 'collaborative-editing',
       type: 'json',
     });
+
+    // Register custom field for table data editor
+    strapi.customFields.register({
+      name: 'table-editor',
+      plugin: 'collaborative-editing',
+      type: 'json',
+    });
   },
 
   bootstrap({ strapi }) {

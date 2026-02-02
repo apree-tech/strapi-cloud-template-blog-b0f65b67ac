@@ -10,11 +10,12 @@ const DEFAULT_METRICS = [
 ];
 
 const PLATFORMS = ['Twitter', 'Reddit', 'Instagram'];
+const MONTH_OPTIONS = [2, 3];
 
 const MAX_VALUE = 999999999;
 
 const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
-  const [data, setData] = useState({ platform: 'Twitter', metrics: [] });
+  const [data, setData] = useState({ platform: 'Twitter', metrics: [], monthCount: 2, month_headers: [] });
   const [errors, setErrors] = useState({});
 
   // Parse value on mount
@@ -23,13 +24,29 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
+          // Convert old format (prev_value, current_value) to new format (month_values)
+          const migratedMetrics = Array.isArray(parsed.metrics)
+            ? parsed.metrics.map(metric => {
+                // If month_values exists, use it; otherwise migrate from old format
+                if (metric.month_values && Array.isArray(metric.month_values)) {
+                  return metric;
+                }
+                return {
+                  ...metric,
+                  month_values: [metric.current_value || 0, metric.prev_value || 0],
+                };
+              })
+            : [];
+
           setData({
             platform: parsed.platform || 'Twitter',
-            metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
+            metrics: migratedMetrics,
+            monthCount: parsed.monthCount || 2,
+            month_headers: parsed.month_headers || [],
           });
         }
       } catch (e) {
-        setData({ platform: 'Twitter', metrics: [] });
+        setData({ platform: 'Twitter', metrics: [], monthCount: 2, month_headers: [] });
       }
     }
   }, []);
@@ -52,12 +69,13 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     return { valid: true, value: num };
   };
 
-  // Calculate change percentage
-  const calculateChange = (prev, current) => {
-    const p = Number(prev) || 0;
-    const c = Number(current) || 0;
-    if (p === 0) return c > 0 ? 100 : 0;
-    return Math.round(((c - p) / p) * 1000) / 10;
+  // Calculate change percentage (between first and second month values)
+  const calculateChange = (monthValues) => {
+    if (!Array.isArray(monthValues) || monthValues.length < 2) return 0;
+    const current = Number(monthValues[0]) || 0;
+    const prev = Number(monthValues[1]) || 0;
+    if (prev === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - prev) / prev) * 1000) / 10;
   };
 
   // Get indicator emoji
@@ -99,11 +117,71 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     updateValue({ ...data, platform: newPlatform });
   };
 
+  // Change month count
+  const changeMonthCount = (newCount) => {
+    const count = parseInt(newCount, 10);
+    if (count < 2 || count > 3) return;
+
+    // Adjust month_values arrays in metrics
+    const adjustedMetrics = data.metrics.map(metric => {
+      const currentValues = metric.month_values || [0, 0];
+      const newValues = [...currentValues];
+
+      // Add or remove values to match new count
+      while (newValues.length < count) {
+        newValues.push(0);
+      }
+      if (newValues.length > count) {
+        newValues.length = count;
+      }
+
+      return { ...metric, month_values: newValues };
+    });
+
+    updateValue({ ...data, monthCount: count, metrics: adjustedMetrics, month_headers: [] });
+  };
+
+  // Get month headers (actual month names, oldest to newest)
+  const getMonthHeaders = () => {
+    if (data.month_headers && data.month_headers.length >= data.monthCount) {
+      return data.month_headers.slice(0, data.monthCount).reverse();
+    }
+
+    // Generate month names starting from oldest to current
+    const headers = [];
+    const now = new Date();
+    const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    // Start from oldest month (monthCount - 1 months ago) to current
+    for (let i = data.monthCount - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = date.toLocaleDateString('ru-RU', { month: 'long' });
+      headers.push(capitalize(monthName));
+    }
+
+    return headers;
+  };
+
+  // Get display index for month values (reverse order: oldest first)
+  const getDisplayMonthIndex = (displayIdx) => {
+    return data.monthCount - 1 - displayIdx;
+  };
+
+  // Create empty month_values array based on monthCount
+  const createEmptyMonthValues = () => {
+    return Array(data.monthCount).fill(0);
+  };
+
   // Add new row
   const addRow = () => {
     const newMetrics = [
       ...data.metrics,
-      { metric_name: '', prev_value: 0, current_value: 0, change_percent: '0.0%', change_indicator: '➡️' },
+      {
+        metric_name: '',
+        month_values: createEmptyMonthValues(),
+        change_percent: '0.0%',
+        change_indicator: '➡️',
+      },
     ];
     updateValue({ ...data, metrics: newMetrics });
   };
@@ -112,8 +190,7 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
   const addDefaults = () => {
     const newMetrics = DEFAULT_METRICS.map((metricName) => ({
       metric_name: metricName,
-      prev_value: 0,
-      current_value: 0,
+      month_values: createEmptyMonthValues(),
       change_percent: '0.0%',
       change_indicator: '➡️',
     }));
@@ -125,38 +202,45 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
   const removeRow = (index) => {
     const newMetrics = data.metrics.filter((_, i) => i !== index);
     const newErrors = { ...errors };
-    delete newErrors[`${index}_prev`];
-    delete newErrors[`${index}_current`];
+    // Remove all error keys for this row
+    for (let i = 0; i < data.monthCount; i++) {
+      delete newErrors[`${index}_month_${i}`];
+    }
     setErrors(newErrors);
     updateValue({ ...data, metrics: newMetrics }, newErrors);
   };
 
   // Update cell
-  const updateCell = (index, field, rawValue) => {
+  const updateCell = (index, field, rawValue, monthIndex = null) => {
     const newMetrics = [...data.metrics];
     const metric = { ...newMetrics[index] };
     const newErrors = { ...errors };
 
     if (field === 'metric_name') {
       metric.metric_name = rawValue;
-    } else if (field === 'prev_value' || field === 'current_value') {
+    } else if (field === 'month_value' && monthIndex !== null) {
       const validation = validateNumber(rawValue);
-      const errorKey = `${index}_${field === 'prev_value' ? 'prev' : 'current'}`;
+      const errorKey = `${index}_month_${monthIndex}`;
+
+      if (!metric.month_values) {
+        metric.month_values = createEmptyMonthValues();
+      }
+      const monthValues = [...metric.month_values];
 
       if (validation.valid) {
-        metric[field] = validation.value;
+        monthValues[monthIndex] = validation.value;
         newErrors[errorKey] = null;
       } else {
-        metric[field] = rawValue;
+        monthValues[monthIndex] = rawValue;
         newErrors[errorKey] = validation.error;
       }
 
-      // Recalculate if both values are valid
-      const prevValid = validateNumber(metric.prev_value);
-      const currentValid = validateNumber(metric.current_value);
+      metric.month_values = monthValues;
 
-      if (prevValid.valid && currentValid.valid) {
-        const change = calculateChange(prevValid.value, currentValid.value);
+      // Recalculate change based on first two values
+      const allValid = monthValues.slice(0, 2).every(v => validateNumber(v).valid);
+      if (allValid && monthValues.length >= 2) {
+        const change = calculateChange(monthValues);
         metric.change_percent = change.toFixed(1) + '%';
         metric.change_indicator = getIndicator(change);
       }
@@ -215,7 +299,7 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
           backgroundColor: '#212134',
         }}
       >
-        {/* Platform header with selector */}
+        {/* Platform header with selectors */}
         <Flex
           style={{
             backgroundColor: '#1a1a2e',
@@ -251,30 +335,52 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
+
+          <Typography
+            variant="omega"
+            style={{ color: '#a5a5ba', marginLeft: '16px' }}
+          >
+            Месяцев:
+          </Typography>
+          <select
+            value={data.monthCount}
+            onChange={(e) => changeMonthCount(e.target.value)}
+            disabled={disabled}
+            style={{
+              backgroundColor: '#32324d',
+              color: '#ffffff',
+              border: '1px solid #4a4a6a',
+              borderRadius: '4px',
+              padding: '6px 12px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {MONTH_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         </Flex>
 
         {data.metrics.length > 0 ? (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...headerStyle, width: '30%' }}>Метрика</th>
-                <th style={{ ...headerStyle, width: '20%' }}>Пред. период</th>
-                <th style={{ ...headerStyle, width: '20%' }}>Текущий</th>
+                <th style={{ ...headerStyle, width: '25%' }}>Метрика</th>
+                {getMonthHeaders().map((header, i) => (
+                  <th key={i} style={{ ...headerStyle, width: `${40 / data.monthCount}%` }}>{header}</th>
+                ))}
                 <th style={{ ...headerStyle, width: '15%' }}>Изменение</th>
-                <th style={{ ...headerStyle, width: '10%' }}></th>
+                <th style={{ ...headerStyle, width: '8%' }}></th>
               </tr>
             </thead>
             <tbody>
               {data.metrics.map((metric, index) => {
-                const prevValidation = validateNumber(metric.prev_value);
-                const currentValidation = validateNumber(metric.current_value);
-                const change = (prevValidation.valid && currentValidation.valid)
-                  ? calculateChange(prevValidation.value, currentValidation.value)
-                  : 0;
+                const monthValues = metric.month_values || createEmptyMonthValues();
+                const change = calculateChange(monthValues);
                 const isPositive = change > 0;
                 const isNegative = change < 0;
-                const prevError = errors[`${index}_prev`];
-                const currentError = errors[`${index}_current`];
 
                 return (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#212134' : '#1a1a2e' }}>
@@ -288,40 +394,32 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
                         disabled={disabled}
                       />
                     </td>
-                    <td style={cellStyle}>
-                      <Box>
-                        <input
-                          type="text"
-                          value={typeof metric.prev_value === 'number' ? formatNumber(metric.prev_value) : metric.prev_value}
-                          onChange={(e) => updateCell(index, 'prev_value', e.target.value)}
-                          style={prevError ? inputErrorStyle : inputValidStyle}
-                          placeholder="0"
-                          disabled={disabled}
-                        />
-                        {prevError && (
-                          <Typography variant="pi" style={{ color: '#d02b20', fontSize: '11px', marginTop: '2px' }}>
-                            {prevError}
-                          </Typography>
-                        )}
-                      </Box>
-                    </td>
-                    <td style={cellStyle}>
-                      <Box>
-                        <input
-                          type="text"
-                          value={typeof metric.current_value === 'number' ? formatNumber(metric.current_value) : metric.current_value}
-                          onChange={(e) => updateCell(index, 'current_value', e.target.value)}
-                          style={currentError ? inputErrorStyle : inputValidStyle}
-                          placeholder="0"
-                          disabled={disabled}
-                        />
-                        {currentError && (
-                          <Typography variant="pi" style={{ color: '#d02b20', fontSize: '11px', marginTop: '2px' }}>
-                            {currentError}
-                          </Typography>
-                        )}
-                      </Box>
-                    </td>
+                    {Array.from({ length: data.monthCount }).map((_, displayIdx) => {
+                      // Reverse: display oldest first, so map display index to data index
+                      const dataIdx = getDisplayMonthIndex(displayIdx);
+                      const monthError = errors[`${index}_month_${dataIdx}`];
+                      const monthValue = monthValues[dataIdx];
+
+                      return (
+                        <td key={displayIdx} style={cellStyle}>
+                          <Box>
+                            <input
+                              type="text"
+                              value={typeof monthValue === 'number' ? formatNumber(monthValue) : monthValue}
+                              onChange={(e) => updateCell(index, 'month_value', e.target.value, dataIdx)}
+                              style={monthError ? inputErrorStyle : inputValidStyle}
+                              placeholder="0"
+                              disabled={disabled}
+                            />
+                            {monthError && (
+                              <Typography variant="pi" style={{ color: '#d02b20', fontSize: '11px', marginTop: '2px' }}>
+                                {monthError}
+                              </Typography>
+                            )}
+                          </Box>
+                        </td>
+                      );
+                    })}
                     <td
                       style={{
                         ...cellStyle,

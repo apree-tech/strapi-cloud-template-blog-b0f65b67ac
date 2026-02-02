@@ -112,7 +112,7 @@ export interface ReportComponentsSocialMediaStats
   collectionName: 'components_report_components_social_media_stats';
   info: {
     description: '\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0430 \u0441\u043E\u0446\u0441\u0435\u0442\u0435\u0439 \u0441 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u043C \u0440\u0430\u0441\u0447\u0451\u0442\u043E\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439';
-    displayName: 'Social Media Stats';
+    displayName: 'social-media-stats';
   };
   attributes: {
     contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
@@ -140,13 +140,16 @@ export interface ReportComponentsSocialMetric extends Struct.ComponentSchema {
 export interface ReportComponentsTableData extends Struct.ComponentSchema {
   collectionName: 'components_report_components_table_data';
   info: {
+    description: '\u0422\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u043D\u0430\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u043C\u044B\u043C\u0438 \u043A\u043E\u043B\u043E\u043D\u043A\u0430\u043C\u0438 \u0438 \u0441\u0442\u0440\u043E\u043A\u0430\u043C\u0438';
     displayName: 'table-data';
   };
   attributes: {
     contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
       Schema.Attribute.DefaultTo<'w100'>;
-    headers: Schema.Attribute.JSON & Schema.Attribute.Required;
-    rows: Schema.Attribute.JSON & Schema.Attribute.Required;
+    headers: Schema.Attribute.JSON;
+    rows: Schema.Attribute.JSON;
+    tableContent: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.table-editor'>;
     title: Schema.Attribute.String;
     totals: Schema.Attribute.JSON;
   };
