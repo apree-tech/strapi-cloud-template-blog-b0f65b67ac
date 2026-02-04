@@ -38,7 +38,7 @@ export interface ReportComponentsCommentBlock extends Struct.ComponentSchema {
   collectionName: 'components_report_components_comment_blocks';
   info: {
     description: 'Chat-like comments with @mention support';
-    displayName: 'Comment Block';
+    displayName: 'comments';
   };
   attributes: {
     messages: Schema.Attribute.JSON &
@@ -109,6 +109,22 @@ export interface ReportComponentsMetricItem extends Struct.ComponentSchema {
   };
 }
 
+export interface ReportComponentsRevenueTable extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_revenue_tables';
+  info: {
+    description: '\u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435 \u043E\u0431\u043E\u0440\u043E\u0442\u043E\u0432 \u0441 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u043E\u0439 \u0434\u0430\u043D\u043D\u044B\u0445 \u043F\u043E API';
+    displayName: 'revenue-table';
+  };
+  attributes: {
+    contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
+      Schema.Attribute.DefaultTo<'w100'>;
+    data: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.revenue-table'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'\u041E\u0431\u043E\u0440\u043E\u0442'>;
+  };
+}
+
 export interface ReportComponentsSection extends Struct.ComponentSchema {
   collectionName: 'components_report_components_sections';
   info: {
@@ -150,19 +166,31 @@ export interface ReportComponentsSocialMetric extends Struct.ComponentSchema {
   };
 }
 
+export interface ReportComponentsTable extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_tables';
+  info: {
+    description: '\u0422\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u0432\u0438\u0437\u0443\u0430\u043B\u044C\u043D\u044B\u043C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u043E\u043C';
+    displayName: 'table';
+  };
+  attributes: {
+    contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
+      Schema.Attribute.DefaultTo<'w100'>;
+    data: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.table-editor'>;
+    title: Schema.Attribute.String;
+  };
+}
+
 export interface ReportComponentsTableData extends Struct.ComponentSchema {
   collectionName: 'components_report_components_table_data';
   info: {
-    description: '\u0422\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u043D\u0430\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u043C\u044B\u043C\u0438 \u043A\u043E\u043B\u043E\u043D\u043A\u0430\u043C\u0438 \u0438 \u0441\u0442\u0440\u043E\u043A\u0430\u043C\u0438';
     displayName: 'table-data';
   };
   attributes: {
     contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
       Schema.Attribute.DefaultTo<'w100'>;
-    headers: Schema.Attribute.JSON;
-    rows: Schema.Attribute.JSON;
-    tableContent: Schema.Attribute.JSON &
-      Schema.Attribute.CustomField<'plugin::collaborative-editing.table-editor'>;
+    headers: Schema.Attribute.JSON & Schema.Attribute.Required;
+    rows: Schema.Attribute.JSON & Schema.Attribute.Required;
     title: Schema.Attribute.String;
     totals: Schema.Attribute.JSON;
   };
@@ -256,9 +284,11 @@ declare module '@strapi/strapi' {
       'report-components.image-section': ReportComponentsImageSection;
       'report-components.metric-group': ReportComponentsMetricGroup;
       'report-components.metric-item': ReportComponentsMetricItem;
+      'report-components.revenue-table': ReportComponentsRevenueTable;
       'report-components.section': ReportComponentsSection;
       'report-components.social-media-stats': ReportComponentsSocialMediaStats;
       'report-components.social-metric': ReportComponentsSocialMetric;
+      'report-components.table': ReportComponentsTable;
       'report-components.table-data': ReportComponentsTableData;
       'report-components.text-block': ReportComponentsTextBlock;
       'shared.media': SharedMedia;

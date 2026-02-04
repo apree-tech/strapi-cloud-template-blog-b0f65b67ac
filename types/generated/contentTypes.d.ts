@@ -545,6 +545,53 @@ export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
   };
 }
 
+export interface ApiModelRevenueModelRevenue
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'model_revenues';
+  info: {
+    description: 'Monthly revenue statistics per model from analytics';
+    displayName: 'Model Revenue';
+    pluralName: 'model-revenues';
+    singularName: 'model-revenue';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::model-revenue.model-revenue'
+    > &
+      Schema.Attribute.Private;
+    messages_revenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    model: Schema.Attribute.Relation<'manyToOne', 'api::model.model'>;
+    model_name: Schema.Attribute.String & Schema.Attribute.Required;
+    month: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 11;
+          min: 0;
+        },
+        number
+      >;
+    platform_page: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    subscriptions_revenue: Schema.Attribute.Decimal &
+      Schema.Attribute.DefaultTo<0>;
+    tips_revenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    total_revenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    year: Schema.Attribute.Integer & Schema.Attribute.Required;
+  };
+}
+
 export interface ApiModelModel extends Struct.CollectionTypeSchema {
   collectionName: 'models';
   info: {
@@ -571,9 +618,58 @@ export interface ApiModelModel extends Struct.CollectionTypeSchema {
       Schema.Attribute.Unique;
     publishedAt: Schema.Attribute.DateTime;
     reports: Schema.Attribute.Relation<'oneToMany', 'api::report.report'>;
+    telegram: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface ApiReportCommentReportComment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'report_comments';
+  info: {
+    displayName: 'Report Comment';
+    pluralName: 'report-comments';
+    singularName: 'report-comment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: true;
+    };
+  };
+  attributes: {
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    field_path: Schema.Attribute.String & Schema.Attribute.Required;
+    is_resolved: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report-comment.report-comment'
+    > &
+      Schema.Attribute.Private;
+    mentions: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    parent_comment_id: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    report_document_id: Schema.Attribute.String & Schema.Attribute.Required;
+    resolved_at: Schema.Attribute.DateTime;
+    resolved_by: Schema.Attribute.Integer;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user_id: Schema.Attribute.Integer & Schema.Attribute.Required;
+    user_name: Schema.Attribute.String & Schema.Attribute.Required;
+    user_type: Schema.Attribute.Enumeration<['user', 'model', 'head_pm']> &
+      Schema.Attribute.DefaultTo<'user'>;
   };
 }
 
@@ -651,8 +747,11 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
         'report-components.text-block',
         'report-components.chart-block',
         'report-components.table-data',
+        'report-components.table',
         'report-components.section',
         'report-components.social-media-stats',
+        'report-components.revenue-table',
+        'report-components.comment-block',
       ]
     >;
     createdAt: Schema.Attribute.DateTime;
@@ -668,6 +767,9 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     model: Schema.Attribute.Relation<'manyToOne', 'api::model.model'>;
     publishedAt: Schema.Attribute.DateTime;
+    telegram_notified: Schema.Attribute.Boolean &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<false>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1189,7 +1291,9 @@ declare module '@strapi/strapi' {
       'api::edit-operation.edit-operation': ApiEditOperationEditOperation;
       'api::edit-session.edit-session': ApiEditSessionEditSession;
       'api::global.global': ApiGlobalGlobal;
+      'api::model-revenue.model-revenue': ApiModelRevenueModelRevenue;
       'api::model.model': ApiModelModel;
+      'api::report-comment.report-comment': ApiReportCommentReportComment;
       'api::report-version.report-version': ApiReportVersionReportVersion;
       'api::report.report': ApiReportReport;
       'plugin::content-releases.release': PluginContentReleasesRelease;

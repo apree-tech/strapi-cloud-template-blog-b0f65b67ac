@@ -28,6 +28,11 @@
       "target": "api::model.model",
       "inversedBy": "reports"
     },
+    "telegram_notified": {
+      "type": "boolean",
+      "default": false,
+      "private": true
+    },
     "accounts": {
       "type": "relation",
       "relation": "manyToMany",
@@ -46,12 +51,6 @@
       "type": "date",
       "required": true
     },
-    "compareMonths": {
-      "type": "integer",
-      "default": 2,
-      "min": 2,
-      "max": 3
-    },
     "content_blocks": {
       "type": "dynamiczone",
       "components": [
@@ -61,15 +60,12 @@
         "report-components.text-block",
         "report-components.chart-block",
         "report-components.table-data",
+        "report-components.table",
         "report-components.section",
         "report-components.social-media-stats",
+        "report-components.revenue-table",
         "report-components.comment-block"
       ]
-    },
-    "telegram_notified": {
-      "type": "boolean",
-      "default": false,
-      "private": true
     }
   }
 }

@@ -94,11 +94,66 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
     return '$' + new Intl.NumberFormat('en-US').format(num);
   };
 
+  // Parse currency input (remove $ and commas)
+  const parseCurrencyInput = (value) => {
+    const cleaned = value.replace(/[$,\s]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Handle cell value change
+  const handleCellChange = (tableKey, platformIndex, field, value) => {
+    const numValue = parseCurrencyInput(value);
+
+    const newData = { ...data };
+    const tableData = { ...newData[tableKey] };
+    const platforms = [...tableData.platforms];
+    const platform = { ...platforms[platformIndex] };
+
+    // Update the field
+    platform[field] = numValue;
+
+    // Recalculate platform total
+    platform.total = (platform.subs || 0) + (platform.tips || 0) + (platform.messages || 0);
+
+    platforms[platformIndex] = platform;
+    tableData.platforms = platforms;
+
+    // Recalculate grand total
+    if (tableData.total) {
+      tableData.total = {
+        ...tableData.total,
+        subs: platforms.reduce((sum, p) => sum + (p.subs || 0), 0),
+        tips: platforms.reduce((sum, p) => sum + (p.tips || 0), 0),
+        messages: platforms.reduce((sum, p) => sum + (p.messages || 0), 0),
+        total: platforms.reduce((sum, p) => sum + (p.total || 0), 0),
+      };
+    }
+
+    newData[tableKey] = tableData;
+    updateValue(newData);
+  };
+
+  // Editable input style
+  const inputStyle = {
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '4px',
+    color: '#a5a5ba',
+    textAlign: 'right',
+    width: '100%',
+    padding: '4px 8px',
+    fontSize: '13px',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
   const cellStyle = {
-    padding: '8px 12px',
+    padding: '10px 12px',
     borderBottom: '1px solid #32324d',
     verticalAlign: 'middle',
     fontSize: '13px',
+    height: '40px',
   };
 
   const headerStyle = {
@@ -118,10 +173,31 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
     color: '#ffffff',
   };
 
-  const renderTable = (tableData, title) => {
+  // Render editable cell
+  const renderEditableCell = (tableKey, platformIndex, field, value) => (
+    <input
+      type="text"
+      value={formatCurrency(value)}
+      onChange={(e) => handleCellChange(tableKey, platformIndex, field, e.target.value)}
+      disabled={disabled}
+      style={{
+        ...inputStyle,
+        cursor: disabled ? 'not-allowed' : 'text',
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = '#4945ff';
+        e.target.select();
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'transparent';
+      }}
+    />
+  );
+
+  const renderTable = (tableData, title, tableKey) => {
     if (!tableData || !tableData.platforms || tableData.platforms.length === 0) {
       return (
-        <Box style={{ flex: 1, minWidth: '280px' }}>
+        <Box style={{ width: '100%' }}>
           <Typography variant="sigma" style={{ color: '#a5a5ba', marginBottom: '8px', display: 'block' }}>
             {title}
           </Typography>
@@ -143,7 +219,7 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
     }
 
     return (
-      <Box style={{ flex: 1, minWidth: '280px' }}>
+      <Box style={{ width: '100%' }}>
         <Typography variant="sigma" style={{ color: '#a5a5ba', marginBottom: '8px', display: 'block' }}>
           {title} {tableData.period && `(${tableData.period})`}
         </Typography>
@@ -171,14 +247,14 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
                   <td style={{ ...cellStyle, color: '#ffffff', fontWeight: 500 }}>
                     {platform.platform}
                   </td>
-                  <td style={{ ...cellStyle, color: '#a5a5ba', textAlign: 'right' }}>
-                    {formatCurrency(platform.subs)}
+                  <td style={{ ...cellStyle, padding: '4px 8px' }}>
+                    {renderEditableCell(tableKey, index, 'subs', platform.subs)}
                   </td>
-                  <td style={{ ...cellStyle, color: '#a5a5ba', textAlign: 'right' }}>
-                    {formatCurrency(platform.tips)}
+                  <td style={{ ...cellStyle, padding: '4px 8px' }}>
+                    {renderEditableCell(tableKey, index, 'tips', platform.tips)}
                   </td>
-                  <td style={{ ...cellStyle, color: '#a5a5ba', textAlign: 'right' }}>
-                    {formatCurrency(platform.messages)}
+                  <td style={{ ...cellStyle, padding: '4px 8px' }}>
+                    {renderEditableCell(tableKey, index, 'messages', platform.messages)}
                   </td>
                   <td style={{ ...cellStyle, color: '#ffffff', textAlign: 'right', fontWeight: 600 }}>
                     {formatCurrency(platform.total)}
@@ -264,6 +340,7 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
       {/* Tables */}
       {hasData ? (
         <Flex
+          direction="column"
           gap={4}
           style={{
             padding: '16px',
@@ -271,11 +348,10 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
             border: '1px solid #32324d',
             borderTop: 'none',
             borderRadius: '0 0 4px 4px',
-            flexWrap: 'wrap',
           }}
         >
-          {renderTable(data.current, 'Текущий месяц')}
-          {renderTable(data.previous, 'Прошлый месяц')}
+          {renderTable(data.current, 'Текущий месяц', 'current')}
+          {renderTable(data.previous, 'Прошлый месяц', 'previous')}
         </Flex>
       ) : (
         <Box

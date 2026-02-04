@@ -1,7 +1,7 @@
 {
   "collectionName": "components_report_components_comment_blocks",
   "info": {
-    "displayName": "Comment Block",
+    "displayName": "comments",
     "description": "Chat-like comments with @mention support"
   },
   "options": {},

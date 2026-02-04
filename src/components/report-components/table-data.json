@@ -1,29 +1,23 @@
 {
   "collectionName": "components_report_components_table_data",
   "info": {
-    "displayName": "table-data",
-    "description": "Таблица с настраиваемыми колонками и строками"
+    "displayName": "table-data"
   },
   "options": {},
   "attributes": {
     "title": {
       "type": "string"
     },
-    "tableContent": {
-      "type": "customField",
-      "customField": "plugin::collaborative-editing.table-editor"
-    },
     "headers": {
       "type": "json",
-      "visible": false
+      "required": true
     },
     "rows": {
       "type": "json",
-      "visible": false
+      "required": true
     },
     "totals": {
-      "type": "json",
-      "visible": false
+      "type": "json"
     },
     "contentWidth": {
       "type": "enumeration",
