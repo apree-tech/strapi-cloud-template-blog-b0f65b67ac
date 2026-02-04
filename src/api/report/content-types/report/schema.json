@@ -65,6 +65,11 @@
         "report-components.social-media-stats",
         "report-components.comment-block"
       ]
+    },
+    "telegram_notified": {
+      "type": "boolean",
+      "default": false,
+      "private": true
     }
   }
 }
