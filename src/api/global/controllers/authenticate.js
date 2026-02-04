@@ -70,11 +70,18 @@ module.exports = {
           // Clear attempts on successful login
           clearAttempts(sessionId);
 
+          // Determine user type based on role
+          const role = account.role || '';
+          const isHeadPM = role.toLowerCase().includes('head pm') || role.toLowerCase().includes('head of production');
+          const userType = isHeadPM ? 'head_pm' : 'user';
+
+          strapi.log.info(`[Auth] User "${account.name}" logged in. Role: "${role}", Type: "${userType}", isHeadPM: ${isHeadPM}`);
+
           const payload = {
             id: account.documentId || account.id,
             name: account.name,
             role: account.role,
-            type: 'user',
+            type: userType,
             isAdmin: account.isAdmin || false,
           };
 
