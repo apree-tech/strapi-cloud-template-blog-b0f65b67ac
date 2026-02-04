@@ -3,8 +3,10 @@ import ActiveEditorsPanel from './components/ActiveEditorsPanel';
 import CollaborativeIndicator from './components/CollaborativeIndicator';
 import HistoryPanel from './components/HistoryPanel';
 import VersionsPanel from './components/VersionsPanel';
+import CommentsPanel from './components/CommentsPanel';
 import SocialMetricsTable from './components/SocialMetricsTable';
 import TableDataEditor from './components/TableDataEditor';
+import ChatCommentsEditor from './components/ChatCommentsEditor';
 import CopyFromPreviousPanel from './components/CopyFromPreviousPanel';
 
 // Panel component for Edit View sidebar
@@ -53,6 +55,18 @@ const CopyFromPreviousSidePanel = ({ document, model, collectionType }) => {
   return {
     title: 'Копирование данных',
     content: <CopyFromPreviousPanel documentId={document?.documentId} />,
+  };
+};
+
+// Comments Panel for Edit View sidebar
+const CommentsSidePanel = ({ document, model, collectionType }) => {
+  if (model !== 'api::report.report') {
+    return null;
+  }
+
+  return {
+    title: 'Комментарии',
+    content: <CommentsPanel documentId={document?.documentId} />,
   };
 };
 
@@ -111,6 +125,24 @@ export default {
       },
       components: {
         Input: async () => ({ default: TableDataEditor }),
+      },
+    });
+
+    // Register custom field for chat-like comments
+    app.customFields.register({
+      name: 'chat-comments',
+      pluginId: pluginId,
+      type: 'json',
+      intlLabel: {
+        id: `${pluginId}.chat-comments.label`,
+        defaultMessage: 'Чат комментариев',
+      },
+      intlDescription: {
+        id: `${pluginId}.chat-comments.description`,
+        defaultMessage: 'Чат с комментариями и @упоминаниями',
+      },
+      components: {
+        Input: async () => ({ default: ChatCommentsEditor }),
       },
     });
   },
@@ -236,6 +268,7 @@ export default {
     if (contentManagerApis.addEditViewSidePanel) {
       try {
         contentManagerApis.addEditViewSidePanel([
+          CommentsSidePanel,
           CopyFromPreviousSidePanel,
           ActiveEditorsSidePanel,
           HistorySidePanel,
@@ -276,6 +309,10 @@ export default {
             [`${pluginId}.copy-from-previous`]: 'Из прошлого',
             [`${pluginId}.add-metric`]: 'Добавить метрику',
             [`${pluginId}.add-default`]: 'Добавить стандартные',
+            [`${pluginId}.comments`]: 'Комментарии',
+            [`${pluginId}.add-comment`]: 'Добавить комментарий',
+            [`${pluginId}.resolve`]: 'Решено',
+            [`${pluginId}.unresolve`]: 'Открыть заново',
           },
           locale,
         });

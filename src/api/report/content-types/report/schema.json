@@ -46,6 +46,12 @@
       "type": "date",
       "required": true
     },
+    "compareMonths": {
+      "type": "integer",
+      "default": 2,
+      "min": 2,
+      "max": 3
+    },
     "content_blocks": {
       "type": "dynamiczone",
       "components": [
@@ -56,7 +62,8 @@
         "report-components.chart-block",
         "report-components.table-data",
         "report-components.section",
-        "report-components.social-media-stats"
+        "report-components.social-media-stats",
+        "report-components.comment-block"
       ]
     }
   }

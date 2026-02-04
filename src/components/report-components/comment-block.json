@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_report_components_comment_blocks",
+  "info": {
+    "displayName": "Comment Block",
+    "description": "Chat-like comments with @mention support"
+  },
+  "options": {},
+  "attributes": {
+    "messages": {
+      "type": "json",
+      "customField": "plugin::collaborative-editing.chat-comments",
+      "default": []
+    }
+  },
+  "config": {}
+}

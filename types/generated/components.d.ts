@@ -34,6 +34,19 @@ export interface ReportComponentsChartBlock extends Struct.ComponentSchema {
   };
 }
 
+export interface ReportComponentsCommentBlock extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_comment_blocks';
+  info: {
+    description: 'Chat-like comments with @mention support';
+    displayName: 'Comment Block';
+  };
+  attributes: {
+    messages: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.chat-comments'> &
+      Schema.Attribute.DefaultTo<[]>;
+  };
+}
+
 export interface ReportComponentsImageItem extends Struct.ComponentSchema {
   collectionName: 'components_report_components_image_items';
   info: {
@@ -238,6 +251,7 @@ declare module '@strapi/strapi' {
     export interface ComponentSchemas {
       'report-components.analysis-block': ReportComponentsAnalysisBlock;
       'report-components.chart-block': ReportComponentsChartBlock;
+      'report-components.comment-block': ReportComponentsCommentBlock;
       'report-components.image-item': ReportComponentsImageItem;
       'report-components.image-section': ReportComponentsImageSection;
       'report-components.metric-group': ReportComponentsMetricGroup;
