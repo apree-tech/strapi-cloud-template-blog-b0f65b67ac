@@ -80,8 +80,6 @@ const CommentsPanel = ({ documentId }) => {
 
   useEffect(() => {
     fetchComments();
-    const interval = setInterval(fetchComments, 5000);
-    return () => clearInterval(interval);
   }, [fetchComments]);
 
   const formatDate = (dateString) => {
