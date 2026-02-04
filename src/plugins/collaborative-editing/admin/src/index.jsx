@@ -8,6 +8,7 @@ import SocialMetricsTable from './components/SocialMetricsTable';
 import TableDataEditor from './components/TableDataEditor';
 import ChatCommentsEditor from './components/ChatCommentsEditor';
 import CopyFromPreviousPanel from './components/CopyFromPreviousPanel';
+import RevenueTableEditor from './components/RevenueTableEditor';
 
 // Panel component for Edit View sidebar
 const ActiveEditorsSidePanel = ({ document, model, collectionType }) => {
@@ -143,6 +144,24 @@ export default {
       },
       components: {
         Input: async () => ({ default: ChatCommentsEditor }),
+      },
+    });
+
+    // Register custom field for revenue table
+    app.customFields.register({
+      name: 'revenue-table',
+      pluginId: pluginId,
+      type: 'json',
+      intlLabel: {
+        id: `${pluginId}.revenue-table.label`,
+        defaultMessage: 'Таблица оборотов',
+      },
+      intlDescription: {
+        id: `${pluginId}.revenue-table.description`,
+        defaultMessage: 'Таблица оборотов с загрузкой данных из API',
+      },
+      components: {
+        Input: async () => ({ default: RevenueTableEditor }),
       },
     });
   },

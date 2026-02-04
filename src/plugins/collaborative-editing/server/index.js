@@ -17,6 +17,20 @@ module.exports = {
       plugin: 'collaborative-editing',
       type: 'json',
     });
+
+    // Register custom field for chat comments
+    strapi.customFields.register({
+      name: 'chat-comments',
+      plugin: 'collaborative-editing',
+      type: 'json',
+    });
+
+    // Register custom field for revenue table
+    strapi.customFields.register({
+      name: 'revenue-table',
+      plugin: 'collaborative-editing',
+      type: 'json',
+    });
   },
 
   bootstrap({ strapi }) {

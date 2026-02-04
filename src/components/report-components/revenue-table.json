@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_report_components_revenue_tables",
+  "info": {
+    "displayName": "revenue-table",
+    "description": "Сравнение оборотов с загрузкой данных по API"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": "Оборот"
+    },
+    "data": {
+      "type": "customField",
+      "customField": "plugin::collaborative-editing.revenue-table"
+    },
+    "contentWidth": {
+      "type": "enumeration",
+      "default": "w100",
+      "enum": ["w25", "w50", "w75", "w100"]
+    }
+  }
+}
