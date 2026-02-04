@@ -1,32 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Flex, Typography, Button, Loader } from '@strapi/design-system';
 import { Download } from '@strapi/icons';
+import { useYjsJson } from '../contexts/YjsContext';
 
 const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
-  const [data, setData] = useState({
+  const initialData = {
     current: { period: '', platforms: [], total: null },
     previous: { period: '', platforms: [], total: null },
-  });
+  };
+
+  const [localData, setLocalData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const isInitializedRef = useRef(false);
 
-  // Parse value on mount
-  useEffect(() => {
+  // Parse initial value
+  const parsedInitial = React.useMemo(() => {
     if (value) {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
-          setData(parsed);
+          return parsed;
         }
       } catch (e) {
         console.error('Failed to parse revenue data:', e);
       }
     }
+    return initialData;
   }, []);
 
-  // Update parent form
+  // Yjs sync for real-time collaboration
+  const handleRemoteUpdate = useCallback((newData) => {
+    setLocalData(newData);
+    // Also update Strapi form
+    onChange({
+      target: {
+        name,
+        value: newData,
+        type: 'json',
+      },
+    });
+  }, [name, onChange]);
+
+  const { value: yjsData, updateValue: yjsUpdateValue, synced } = useYjsJson(
+    `revenue-table:${name}`,
+    parsedInitial,
+    handleRemoteUpdate
+  );
+
+  // Initialize local data from Yjs or prop value
+  useEffect(() => {
+    if (!isInitializedRef.current) {
+      if (yjsData && Object.keys(yjsData).length > 0) {
+        setLocalData(yjsData);
+      } else if (parsedInitial) {
+        setLocalData(parsedInitial);
+      }
+      isInitializedRef.current = true;
+    }
+  }, [yjsData, parsedInitial]);
+
+  // Use Yjs data if available, otherwise local
+  const data = synced && yjsData ? yjsData : localData;
+
+  // Update parent form and Yjs
   const updateValue = (newData) => {
-    setData(newData);
+    setLocalData(newData);
+    // Update Yjs (will sync to other users)
+    if (synced) {
+      yjsUpdateValue(newData);
+    }
+    // Update Strapi form
     onChange({
       target: {
         name,

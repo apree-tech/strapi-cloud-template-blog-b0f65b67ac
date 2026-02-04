@@ -183,10 +183,85 @@ export const useYjsSync = (socket, documentId, currentUser) => {
     };
   }, []);
 
+  // Bind a JSON field to Y.Map for complex data synchronization
+  const bindJsonField = useCallback((fieldPath, initialValue, onChange) => {
+    if (!ydocRef.current) return () => {};
+
+    const ymap = ydocRef.current.getMap(fieldPath);
+
+    // Initialize with current value if Y.Map is empty
+    if (ymap.size === 0 && initialValue) {
+      ydocRef.current.transact(() => {
+        ymap.set('data', JSON.stringify(initialValue));
+      });
+    }
+
+    // Update component when Y.Map changes
+    const observer = (event) => {
+      if (event.transaction.local) return; // Skip local changes
+
+      const jsonStr = ymap.get('data');
+      if (jsonStr) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          console.log('[Yjs] JSON field updated from remote:', fieldPath);
+          onChange(parsed);
+        } catch (e) {
+          console.error('[Yjs] Failed to parse JSON:', e);
+        }
+      }
+    };
+
+    ymap.observe(observer);
+    observersRef.current.set(fieldPath, { ymap, observer, type: 'json' });
+
+    // Return update function and cleanup
+    const updateValue = (newValue) => {
+      ydocRef.current.transact(() => {
+        ymap.set('data', JSON.stringify(newValue));
+      });
+    };
+
+    const cleanup = () => {
+      ymap.unobserve(observer);
+      observersRef.current.delete(fieldPath);
+    };
+
+    return { updateValue, cleanup };
+  }, []);
+
+  // Get current JSON value from Y.Map
+  const getJsonValue = useCallback((fieldPath) => {
+    if (!ydocRef.current) return null;
+    const ymap = ydocRef.current.getMap(fieldPath);
+    const jsonStr = ymap.get('data');
+    if (jsonStr) {
+      try {
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, []);
+
+  // Set JSON value in Y.Map
+  const setJsonValue = useCallback((fieldPath, value) => {
+    if (!ydocRef.current) return;
+    const ymap = ydocRef.current.getMap(fieldPath);
+    ydocRef.current.transact(() => {
+      ymap.set('data', JSON.stringify(value));
+    });
+  }, []);
+
   // Unbind all observers
   const unbindAll = useCallback(() => {
-    observersRef.current.forEach(({ ytext, observer }) => {
-      ytext.unobserve(observer);
+    observersRef.current.forEach(({ ytext, ymap, observer, type }) => {
+      if (type === 'json' && ymap) {
+        ymap.unobserve(observer);
+      } else if (ytext) {
+        ytext.unobserve(observer);
+      }
     });
     observersRef.current.clear();
   }, []);
@@ -215,9 +290,12 @@ export const useYjsSync = (socket, documentId, currentUser) => {
     getYText,
     getYMap,
     bindTextInput,
+    bindJsonField,
     unbindAll,
     getValue,
     setValue,
+    getJsonValue,
+    setJsonValue,
   };
 };
 

@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Flex, Typography, Button, IconButton } from '@strapi/design-system';
 import { Plus, Trash } from '@strapi/icons';
+import { useYjsJson } from '../contexts/YjsContext';
 
 const TableDataEditor = ({ name, value, onChange, disabled }) => {
-  const [data, setData] = useState({ headers: [], rows: [], totals: [], autoTotals: true });
+  const initialData = { headers: [], rows: [], totals: [], autoTotals: true };
+  const [localData, setLocalData] = useState(initialData);
+  const isInitializedRef = useRef(false);
 
   // Parse number from string (handles spaces, commas)
   const parseNumber = (str) => {
@@ -43,27 +46,60 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     });
   }, []);
 
-  // Parse value on mount
-  useEffect(() => {
+  // Parse initial value
+  const parsedInitial = React.useMemo(() => {
     if (value) {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
-          const autoTotals = parsed.autoTotals !== false; // default true
-          setData({
+          return {
             headers: Array.isArray(parsed.headers) ? parsed.headers : [],
             rows: Array.isArray(parsed.rows) ? parsed.rows : [],
             totals: Array.isArray(parsed.totals) ? parsed.totals : [],
-            autoTotals: autoTotals,
-          });
+            autoTotals: parsed.autoTotals !== false,
+          };
         }
       } catch (e) {
-        setData({ headers: [], rows: [], totals: [], autoTotals: true });
+        // ignore
       }
     }
+    return initialData;
   }, []);
 
-  // Update parent form
+  // Yjs sync for real-time collaboration
+  const handleRemoteUpdate = useCallback((newData) => {
+    setLocalData(newData);
+    onChange({
+      target: {
+        name,
+        value: newData,
+        type: 'json',
+      },
+    });
+  }, [name, onChange]);
+
+  const { value: yjsData, updateValue: yjsUpdateValue, synced } = useYjsJson(
+    `table-editor:${name}`,
+    parsedInitial,
+    handleRemoteUpdate
+  );
+
+  // Initialize local data
+  useEffect(() => {
+    if (!isInitializedRef.current) {
+      if (yjsData && Object.keys(yjsData).length > 0) {
+        setLocalData(yjsData);
+      } else if (parsedInitial) {
+        setLocalData(parsedInitial);
+      }
+      isInitializedRef.current = true;
+    }
+  }, [yjsData, parsedInitial]);
+
+  // Use Yjs data if available
+  const data = synced && yjsData ? yjsData : localData;
+
+  // Update parent form and Yjs
   const updateValue = (newData) => {
     // Auto-calculate totals if enabled and totals row exists
     let finalData = newData;
@@ -74,7 +110,14 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
       };
     }
 
-    setData(finalData);
+    setLocalData(finalData);
+
+    // Sync via Yjs
+    if (synced) {
+      yjsUpdateValue(finalData);
+    }
+
+    // Update Strapi form
     onChange({
       target: {
         name,
