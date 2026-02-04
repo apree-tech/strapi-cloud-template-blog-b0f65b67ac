@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Flex, Typography, Button, IconButton } from '@strapi/design-system';
 import { Plus, Trash } from '@strapi/icons';
-import { useYjsJson } from '../contexts/YjsContext';
+import { useDomSync } from '../hooks/useDomSync';
 
 const TableDataEditor = ({ name, value, onChange, disabled }) => {
-  const initialData = { headers: [], rows: [], totals: [], autoTotals: true };
-  const [localData, setLocalData] = useState(initialData);
-  const isInitializedRef = useRef(false);
+  const [data, setData] = useState({ headers: [], rows: [], totals: [], autoTotals: true });
 
   // Parse number from string (handles spaces, commas)
   const parseNumber = (str) => {
@@ -46,29 +44,28 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     });
   }, []);
 
-  // Parse initial value
-  const parsedInitial = React.useMemo(() => {
+  // Parse value on mount
+  useEffect(() => {
     if (value) {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
-          return {
+          setData({
             headers: Array.isArray(parsed.headers) ? parsed.headers : [],
             rows: Array.isArray(parsed.rows) ? parsed.rows : [],
             totals: Array.isArray(parsed.totals) ? parsed.totals : [],
             autoTotals: parsed.autoTotals !== false,
-          };
+          });
         }
       } catch (e) {
         // ignore
       }
     }
-    return initialData;
   }, []);
 
-  // Yjs sync for real-time collaboration
+  // DOM sync for real-time collaboration
   const handleRemoteUpdate = useCallback((newData) => {
-    setLocalData(newData);
+    setData(newData);
     onChange({
       target: {
         name,
@@ -78,28 +75,13 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     });
   }, [name, onChange]);
 
-  const { value: yjsData, updateValue: yjsUpdateValue, synced } = useYjsJson(
+  const { updateValue: broadcastUpdate } = useDomSync(
     `table-editor:${name}`,
-    parsedInitial,
+    data,
     handleRemoteUpdate
   );
 
-  // Initialize local data
-  useEffect(() => {
-    if (!isInitializedRef.current) {
-      if (yjsData && Object.keys(yjsData).length > 0) {
-        setLocalData(yjsData);
-      } else if (parsedInitial) {
-        setLocalData(parsedInitial);
-      }
-      isInitializedRef.current = true;
-    }
-  }, [yjsData, parsedInitial]);
-
-  // Use Yjs data if available
-  const data = synced && yjsData ? yjsData : localData;
-
-  // Update parent form and Yjs
+  // Update parent form and broadcast
   const updateValue = (newData) => {
     // Auto-calculate totals if enabled and totals row exists
     let finalData = newData;
@@ -110,12 +92,10 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
       };
     }
 
-    setLocalData(finalData);
+    setData(finalData);
 
-    // Sync via Yjs
-    if (synced) {
-      yjsUpdateValue(finalData);
-    }
+    // Broadcast to other users
+    broadcastUpdate(finalData);
 
     // Update Strapi form
     onChange({

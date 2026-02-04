@@ -392,6 +392,23 @@ module.exports = {
         }
       });
 
+      // Simple DOM field update (broadcast to others)
+      socket.on('field-update', (data) => {
+        const { reportId, fieldPath, value, senderId } = data;
+        if (!reportId) return;
+
+        const room = `report:${reportId}`;
+
+        // Broadcast to all others in the room
+        socket.to(room).emit('field-update', {
+          fieldPath,
+          value,
+          senderId,
+        });
+
+        strapi.log.debug(`[DomSync] Broadcast field update: ${fieldPath}`);
+      });
+
       // Request sync
       socket.on('request-sync', async (data) => {
         const { reportId, sinceSequence } = data;
