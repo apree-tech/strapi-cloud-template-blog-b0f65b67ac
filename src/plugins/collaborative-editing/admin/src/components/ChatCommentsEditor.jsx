@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Flex, Typography, Button, Textarea, Field } from '@strapi/design-system';
 import { useFetchClient } from '@strapi/admin/strapi-admin';
+import { useDomSync } from '../hooks/useDomSync';
 
 const ChatCommentsEditor = ({ name, value, onChange, disabled }) => {
   const [messages, setMessages] = useState([]);
@@ -54,9 +55,29 @@ const ChatCommentsEditor = ({ name, value, onChange, disabled }) => {
     }
   }, []);
 
-  // Update parent form
+  // DOM sync for real-time collaboration
+  const handleRemoteUpdate = useCallback((newMessages) => {
+    setMessages(newMessages);
+    onChange({
+      target: {
+        name,
+        value: newMessages,
+        type: 'json',
+      },
+    });
+  }, [name, onChange]);
+
+  const { updateValue: broadcastUpdate } = useDomSync(
+    `chat-comments:${name}`,
+    messages,
+    handleRemoteUpdate
+  );
+
+  // Update parent form and broadcast
   const updateValue = (newMessages) => {
     setMessages(newMessages);
+    // Broadcast to other users
+    broadcastUpdate(newMessages);
     onChange({
       target: {
         name,

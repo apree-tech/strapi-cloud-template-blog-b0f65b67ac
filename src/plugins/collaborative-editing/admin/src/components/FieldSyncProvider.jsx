@@ -1,18 +1,19 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { io } from 'socket.io-client';
 
 /**
  * FieldSyncManager - Manages real-time field synchronization using Yjs CRDT
- * with auto-save to Strapi database
+ * Saves only before version creation (every 5 minutes) instead of every 1 second
  */
 const FieldSyncManager = ({ documentId, yjs, connected, fieldFocus, currentUser }) => {
   const boundFieldsRef = useRef(new Set());
   const cleanupFunctionsRef = useRef(new Map());
-  const saveTimeoutRef = useRef(null);
   const savingRef = useRef(false);
+  const socketRef = useRef(null);
 
-  // Auto-save function - clicks the Save button
+  // Save function - clicks the Save button
   const triggerSave = useCallback(async () => {
-    if (savingRef.current) return;
+    if (savingRef.current) return Promise.resolve(false);
 
     // Find and click the save button
     const saveButton = document.querySelector('button[type="submit"]') ||
@@ -23,34 +24,60 @@ const FieldSyncManager = ({ documentId, yjs, connected, fieldFocus, currentUser 
                        );
 
     if (saveButton && !saveButton.disabled) {
-      console.log('[AutoSave] Triggering save...');
+      console.log('[VersionSave] Triggering save before version...');
       savingRef.current = true;
 
       try {
         saveButton.click();
-        console.log('[AutoSave] Save triggered successfully');
+        console.log('[VersionSave] Save triggered successfully');
+        return new Promise(resolve => {
+          // Wait for save to complete (Strapi form submission)
+          setTimeout(() => {
+            savingRef.current = false;
+            resolve(true);
+          }, 2000);
+        });
       } catch (error) {
-        console.error('[AutoSave] Error triggering save:', error);
-      } finally {
-        setTimeout(() => { savingRef.current = false; }, 1000);
+        console.error('[VersionSave] Error triggering save:', error);
+        savingRef.current = false;
+        return Promise.resolve(false);
       }
     }
+    return Promise.resolve(false);
   }, []);
 
-  // Debounced save - triggers 1 second after last change
-  const debouncedSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      triggerSave();
-    }, 1000); // 1 second debounce
-  }, [triggerSave]);
+  // Listen for prepare-version event from server
+  useEffect(() => {
+    if (!documentId) return;
 
-  // Track changes and trigger save
-  const markAsChanged = useCallback(() => {
-    debouncedSave();
-  }, [debouncedSave]);
+    // Get or create socket connection
+    const socket = io(window.location.origin, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('[VersionSave] Socket connected for version events');
+      socket.emit('join-report', { reportId: documentId });
+    });
+
+    // When server is about to create a version, save first
+    socket.on('prepare-version', async ({ reportId }) => {
+      if (reportId !== documentId) return;
+
+      console.log('[VersionSave] Received prepare-version, saving...');
+      const saved = await triggerSave();
+
+      // Notify server that save is complete
+      socket.emit('version-ready', { reportId, saved });
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [documentId, triggerSave]);
 
   // Check if element is inside a CodeMirror/Slate/Blocks editor
   const isInsideRichEditor = useCallback((element) => {
@@ -123,8 +150,6 @@ const FieldSyncManager = ({ documentId, yjs, connected, fieldFocus, currentUser 
         const cleanup = yjs.bindTextInput(input, fieldPath);
         boundFieldsRef.current.add(fieldPath);
         cleanupFunctionsRef.current.set(fieldPath, cleanup);
-
-        input.addEventListener('input', markAsChanged);
       } catch (error) {
         console.warn('[FieldSync] Error binding input:', error);
       }
@@ -133,16 +158,7 @@ const FieldSyncManager = ({ documentId, yjs, connected, fieldFocus, currentUser 
     // Note: Blocks Editor (Slate/CodeMirror) sync is disabled
     // because direct DOM manipulation breaks their internal state.
     // Only simple input/textarea fields are synchronized via Yjs.
-  }, [yjs, markAsChanged, isInsideRichEditor]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [yjs, isInsideRichEditor]);
 
   // Update field focus indicators
   useEffect(() => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Flex, Typography, Button, IconButton, SingleSelect, SingleSelectOption } from '@strapi/design-system';
 import { Plus, Trash } from '@strapi/icons';
+import { useDomSync } from '../hooks/useDomSync';
 
 const DEFAULT_METRICS = [
   'Охваты',
@@ -101,12 +102,36 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     return Object.values(errors).some(e => e !== null);
   }, [errors]);
 
-  // Update parent form
+  // DOM sync for real-time collaboration
+  const handleRemoteUpdate = useCallback((newData) => {
+    setData(newData);
+    setErrors({}); // Clear errors on remote update
+    onChange({
+      target: {
+        name,
+        value: newData,
+        type: 'json',
+      },
+    });
+  }, [name, onChange]);
+
+  const { updateValue: broadcastUpdate } = useDomSync(
+    `social-metrics:${name}`,
+    data,
+    handleRemoteUpdate
+  );
+
+  // Update parent form and broadcast
   const updateValue = (newData, newErrors = errors) => {
     setData(newData);
 
     // Block form submission if there are errors
     const formHasErrors = Object.values(newErrors).some(e => e !== null);
+
+    // Broadcast to other users
+    if (!formHasErrors) {
+      broadcastUpdate(newData);
+    }
 
     onChange({
       target: {
