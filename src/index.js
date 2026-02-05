@@ -18,6 +18,10 @@ const initializedDocs = new Set();
 // { docId: { hasChanges: true, users: Map(userId => { id, name }) } }
 const documentChanges = new Map();
 
+// Track pending version creation requests
+// { docId: { resolve: Function, timeout: NodeJS.Timeout } }
+const pendingVersions = new Map();
+
 // Get or create a Y.Doc for a document
 const getYDoc = (docId) => {
   if (!docs.has(docId)) {
@@ -409,6 +413,19 @@ module.exports = {
         strapi.log.debug(`[DomSync] Broadcast field update: ${fieldPath}`);
       });
 
+      // Client confirms save is complete before version creation
+      socket.on('version-ready', ({ reportId, saved }) => {
+        if (!reportId) return;
+
+        const pending = pendingVersions.get(reportId);
+        if (pending) {
+          strapi.log.info(`[Version] Client confirmed save for ${reportId}, saved: ${saved}`);
+          clearTimeout(pending.timeout);
+          pending.resolve(saved);
+          pendingVersions.delete(reportId);
+        }
+      });
+
       // Request sync
       socket.on('request-sync', async (data) => {
         const { reportId, sinceSequence } = data;
@@ -483,27 +500,47 @@ module.exports = {
             // Collect user info
             const userIds = Array.from(tracker.users.values()).map(u => u.id);
             const userNames = Array.from(tracker.users.values()).map(u => u.name).join(', ');
+            const room = `report:${docId}`;
 
-            strapi.log.info(`[Version] Creating auto-version for ${docId} by ${userNames}`);
+            strapi.log.info(`[Version] Preparing version for ${docId}, notifying clients to save...`);
 
-            // Create version
-            await versionService.createVersion(docId, userIds, userNames, true);
+            // Ask clients to save before creating version
+            io.to(room).emit('prepare-version', { reportId: docId });
+
+            // Wait for client confirmation (with 5 second timeout)
+            const saveConfirmed = await new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                strapi.log.warn(`[Version] Timeout waiting for save confirmation for ${docId}`);
+                pendingVersions.delete(docId);
+                resolve(false);
+              }, 5000);
+
+              pendingVersions.set(docId, { resolve, timeout });
+            });
+
+            strapi.log.info(`[Version] Creating auto-version for ${docId} by ${userNames} (save confirmed: ${saveConfirmed})`);
+
+            // Create version (even if save wasn't confirmed, use current DB state)
+            // Returns null if no actual changes
+            const version = await versionService.createVersion(docId, userIds, userNames, true);
 
             // Reset tracker
             tracker.hasChanges = false;
             tracker.users.clear();
 
-            // Notify connected clients
-            const room = `report:${docId}`;
-            io.to(room).emit('version-created', {
-              userNames,
-              isAutoSave: true,
-            });
+            // Notify connected clients only if version was actually created
+            if (version) {
+              io.to(room).emit('version-created', {
+                userNames,
+                isAutoSave: true,
+                versionNumber: version.version_number,
+              });
+            }
           }
         }
       } catch (error) {
         strapi.log.error('[Version] Error during auto-versioning:', error);
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 60 * 1000); // 1 minute
   },
 };

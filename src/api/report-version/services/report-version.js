@@ -39,6 +39,7 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
 
   /**
    * Create a version snapshot
+   * Returns null if there are no changes since the last version
    */
   async createVersion(reportDocumentId, userIds, userNames, isAutoSave = true) {
     // Get the current report data
@@ -52,14 +53,6 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
       return null;
     }
 
-    // Get the latest version number
-    const latestVersion = await strapi.db.query('api::report-version.report-version').findOne({
-      where: { report_document_id: reportDocumentId },
-      orderBy: { version_number: 'desc' },
-    });
-
-    const newVersionNumber = (latestVersion?.version_number || 0) + 1;
-
     // Create snapshot of all report fields
     const snapshot = {
       title: report.title,
@@ -69,11 +62,25 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
       uuid: report.uuid,
     };
 
+    // Get the latest version
+    const latestVersion = await strapi.db.query('api::report-version.report-version').findOne({
+      where: { report_document_id: reportDocumentId },
+      orderBy: { version_number: 'desc' },
+    });
+
     // Generate change summary by comparing with previous version
     let changeSummary = 'Первая версия';
     if (latestVersion) {
       changeSummary = this.generateChangeSummary(latestVersion.snapshot_data, snapshot);
+
+      // Skip creating version if no actual changes (for auto-save only)
+      if (isAutoSave && changeSummary === 'Без изменений') {
+        strapi.log.debug(`[Version] Skipping auto-version for ${reportDocumentId} - no changes`);
+        return null;
+      }
     }
+
+    const newVersionNumber = (latestVersion?.version_number || 0) + 1;
 
     const version = await strapi.db.query('api::report-version.report-version').create({
       data: {
