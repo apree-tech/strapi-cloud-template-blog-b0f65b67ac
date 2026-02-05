@@ -133,23 +133,22 @@ const HistoryPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={4}>
+    <Box padding={2}>
       {/* Header */}
-      <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-        <Typography variant="delta" fontWeight="bold">
-          История изменений
+      <Flex justifyContent="space-between" alignItems="center" marginBottom={2}>
+        <Typography variant="pi" fontWeight="bold" style={{ fontSize: '12px' }}>
+          История
         </Typography>
-        <Button variant="ghost" size="S" onClick={fetchHistory}>
-          Обновить
+        <Button variant="ghost" size="S" onClick={fetchHistory} style={{ padding: '4px 8px', minWidth: 'auto' }}>
+          ↻
         </Button>
       </Flex>
 
       {/* Filter by user */}
       {users.length > 0 && (
-        <Box marginBottom={4}>
+        <Box marginBottom={2}>
           <SingleSelect
-            label="Фильтр по пользователю"
-            placeholder="Все пользователи"
+            placeholder="Все"
             value={selectedUserId}
             onChange={(value) => {
               setSelectedUserId(value);
@@ -159,6 +158,7 @@ const HistoryPanel = ({ documentId }) => {
               setSelectedUserId('');
               setPagination(prev => ({ ...prev, page: 1 }));
             }}
+            size="S"
           >
             {users.map(user => (
               <SingleSelectOption key={user.id} value={user.id.toString()}>
@@ -171,63 +171,61 @@ const HistoryPanel = ({ documentId }) => {
 
       {/* History List */}
       {loading ? (
-        <Flex justifyContent="center" padding={4}>
+        <Flex justifyContent="center" padding={2}>
           <Loader small />
         </Flex>
       ) : history.length === 0 ? (
-        <Typography variant="pi" textColor="neutral500">
-          Нет изменений для отображения
+        <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+          Нет изменений
         </Typography>
       ) : (
-        <Flex direction="column" gap={2}>
+        <Flex direction="column" gap={1}>
           {history.map((operation) => (
             <Box
               key={operation.id}
-              padding={3}
+              padding={2}
               background="neutral0"
-              borderColor="neutral200"
               hasRadius
               style={{ border: '1px solid #dcdce4' }}
             >
-              <Flex justifyContent="space-between" alignItems="flex-start">
-                <Flex direction="column" gap={1} style={{ flex: 1, minWidth: 0 }}>
-                  {/* User and time */}
-                  <Flex alignItems="center" gap={2}>
-                    <Typography variant="omega" fontWeight="semiBold">
-                      {operation.user_name}
-                    </Typography>
-                    <Typography variant="pi" textColor="neutral500">
-                      {formatDate(operation.timestamp)}
-                    </Typography>
-                  </Flex>
-
-                  {/* Field */}
-                  <Typography variant="pi" textColor="neutral600">
-                    {formatFieldPath(operation.field_path)}
+              <Flex direction="column" gap={1}>
+                {/* User and time */}
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Typography variant="pi" fontWeight="semiBold" style={{ fontSize: '11px' }}>
+                    {operation.user_name}
                   </Typography>
+                  <Typography variant="pi" textColor="neutral500" style={{ fontSize: '10px' }}>
+                    {formatDate(operation.timestamp)}
+                  </Typography>
+                </Flex>
 
-                  {/* Old → New value */}
-                  <Box marginTop={1}>
-                    <Flex direction="column" gap={1}>
-                      <Typography
-                        variant="pi"
-                        textColor="danger600"
-                        style={{
-                          textDecoration: 'line-through',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {formatValue(operation.old_value)}
-                      </Typography>
-                      <Typography
-                        variant="pi"
-                        textColor="success600"
-                        style={{ wordBreak: 'break-word' }}
-                      >
-                        {formatValue(operation.new_value)}
-                      </Typography>
-                    </Flex>
-                  </Box>
+                {/* Field */}
+                <Typography variant="pi" textColor="neutral600" style={{ fontSize: '10px' }}>
+                  {formatFieldPath(operation.field_path)}
+                </Typography>
+
+                {/* Old → New value */}
+                <Flex gap={1} style={{ fontSize: '10px' }}>
+                  <Typography
+                    variant="pi"
+                    textColor="danger600"
+                    style={{
+                      textDecoration: 'line-through',
+                      wordBreak: 'break-word',
+                      fontSize: '10px',
+                      flex: 1,
+                    }}
+                  >
+                    {formatValue(operation.old_value)}
+                  </Typography>
+                  <Typography variant="pi" textColor="neutral400" style={{ fontSize: '10px' }}>→</Typography>
+                  <Typography
+                    variant="pi"
+                    textColor="success600"
+                    style={{ wordBreak: 'break-word', fontSize: '10px', flex: 1 }}
+                  >
+                    {formatValue(operation.new_value)}
+                  </Typography>
                 </Flex>
 
                 {/* Rollback button */}
@@ -236,10 +234,9 @@ const HistoryPanel = ({ documentId }) => {
                   size="S"
                   onClick={() => handleRollback(operation.id)}
                   disabled={rolling === operation.id}
-                  startIcon={<ArrowLeft />}
-                  style={{ flexShrink: 0, marginLeft: '8px' }}
+                  style={{ padding: '2px 6px', fontSize: '10px', alignSelf: 'flex-end' }}
                 >
-                  {rolling === operation.id ? '...' : 'Откатить'}
+                  {rolling === operation.id ? '...' : '↩ Откат'}
                 </Button>
               </Flex>
             </Box>
@@ -247,25 +244,27 @@ const HistoryPanel = ({ documentId }) => {
 
           {/* Pagination */}
           {pagination.pageCount > 1 && (
-            <Flex justifyContent="center" gap={2} marginTop={3}>
+            <Flex justifyContent="center" alignItems="center" gap={1} marginTop={2}>
               <Button
                 variant="tertiary"
                 size="S"
                 disabled={pagination.page === 1}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                style={{ padding: '2px 6px', minWidth: 'auto' }}
               >
-                Назад
+                ←
               </Button>
-              <Typography variant="pi">
-                {pagination.page} из {pagination.pageCount}
+              <Typography variant="pi" style={{ fontSize: '10px' }}>
+                {pagination.page}/{pagination.pageCount}
               </Typography>
               <Button
                 variant="tertiary"
                 size="S"
                 disabled={pagination.page === pagination.pageCount}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                style={{ padding: '2px 6px', minWidth: 'auto' }}
               >
-                Далее
+                →
               </Button>
             </Flex>
           )}

@@ -128,8 +128,8 @@ const CommentsPanel = ({ documentId }) => {
 
   if (!documentId) {
     return (
-      <Box padding={4}>
-        <Typography variant="pi" textColor="neutral600">
+      <Box padding={2}>
+        <Typography variant="pi" textColor="neutral600" style={{ fontSize: '11px' }}>
           Сохраните документ для просмотра комментариев
         </Typography>
       </Box>
@@ -137,15 +137,15 @@ const CommentsPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={4}>
+    <Box padding={2}>
       {/* Header */}
-      <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-        <Flex alignItems="center" gap={2}>
-          <Typography variant="delta" fontWeight="bold">
+      <Flex justifyContent="space-between" alignItems="center" marginBottom={2}>
+        <Flex alignItems="center" gap={1}>
+          <Typography variant="pi" fontWeight="bold" style={{ fontSize: '12px' }}>
             Упоминания
           </Typography>
           {totalMentions > 0 && (
-            <Badge backgroundColor="warning100" textColor="warning700" size="S">
+            <Badge backgroundColor="warning100" textColor="warning700" size="S" style={{ fontSize: '9px' }}>
               {totalMentions}
             </Badge>
           )}
@@ -154,46 +154,44 @@ const CommentsPanel = ({ documentId }) => {
 
       {/* Comments List */}
       {loading ? (
-        <Typography variant="pi" textColor="neutral500">
+        <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
           Загрузка...
         </Typography>
       ) : commentsWithContext.length === 0 ? (
-        <Flex direction="column" alignItems="center" padding={4} gap={2}>
-          <Typography variant="pi" textColor="neutral500">
-            Нет упоминаний
-          </Typography>
-        </Flex>
+        <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+          Нет упоминаний
+        </Typography>
       ) : (
-        <Flex direction="column" gap={4}>
+        <Flex direction="column" gap={2}>
           {commentsWithContext.map((block) => (
             <Box key={block.index}>
-              <Badge backgroundColor="neutral100" textColor="neutral700" size="S" style={{ marginBottom: '8px' }}>
+              <Badge backgroundColor="neutral100" textColor="neutral700" size="S" style={{ marginBottom: '4px', fontSize: '9px' }}>
                 {block.contextLabel}
               </Badge>
-              <Flex direction="column" gap={2}>
+              <Flex direction="column" gap={1}>
                 {block.messages.map((msg, msgIndex) => (
                   <Box
                     key={msg.id || msgIndex}
-                    padding={3}
+                    padding={2}
                     background="neutral0"
                     hasRadius
                     style={{
                       border: '1px solid #eaeaef',
-                      borderLeft: '3px solid #f59e0b',
+                      borderLeft: '2px solid #f59e0b',
                     }}
                   >
                     {/* Header */}
-                    <Flex alignItems="center" gap={2} marginBottom={2}>
-                      <Typography variant="omega" fontWeight="semiBold">
+                    <Flex justifyContent="space-between" alignItems="center" marginBottom={1}>
+                      <Typography variant="pi" fontWeight="semiBold" style={{ fontSize: '11px' }}>
                         {msg.author_name}
                       </Typography>
-                      <Typography variant="pi" textColor="neutral500">
+                      <Typography variant="pi" textColor="neutral500" style={{ fontSize: '10px' }}>
                         {formatDate(msg.created_at)}
                       </Typography>
                     </Flex>
 
                     {/* Content */}
-                    <Typography variant="pi" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <Typography variant="pi" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '11px' }}>
                       {renderContent(msg.content)}
                     </Typography>
                   </Box>

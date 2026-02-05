@@ -139,62 +139,61 @@ const VersionsPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={4}>
+    <Box padding={2}>
       {/* Header */}
-      <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-        <Typography variant="delta" fontWeight="bold">
-          Версии документа
+      <Flex justifyContent="space-between" alignItems="center" marginBottom={2}>
+        <Typography variant="pi" fontWeight="bold" style={{ fontSize: '12px' }}>
+          Версии
         </Typography>
-        <Button variant="ghost" size="S" onClick={fetchVersions}>
-          Обновить
+        <Button variant="ghost" size="S" onClick={fetchVersions} style={{ padding: '4px 8px', minWidth: 'auto' }}>
+          ↻
         </Button>
       </Flex>
 
       {/* Show all toggle */}
       {total > 10 && (
-        <Box marginBottom={3}>
+        <Box marginBottom={2}>
           <Button
             variant="tertiary"
             size="S"
             onClick={() => setShowAll(!showAll)}
+            style={{ padding: '4px 8px', fontSize: '10px' }}
           >
-            {showAll ? `Показать 10 последних` : `Показать все (${total})`}
+            {showAll ? `10 последних` : `Все (${total})`}
           </Button>
         </Box>
       )}
 
       {/* Date filter (only when showing all) */}
       {showAll && (
-        <Flex gap={2} marginBottom={3}>
+        <Flex gap={1} marginBottom={2}>
           <Box style={{ flex: 1 }}>
-            <Typography variant="pi" fontWeight="bold" marginBottom={1}>
-              С даты
-            </Typography>
             <input
               type="date"
               value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
               onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : null)}
+              placeholder="С"
               style={{
                 width: '100%',
-                padding: '8px',
+                padding: '4px',
                 border: '1px solid #dcdce4',
                 borderRadius: '4px',
+                fontSize: '10px',
               }}
             />
           </Box>
           <Box style={{ flex: 1 }}>
-            <Typography variant="pi" fontWeight="bold" marginBottom={1}>
-              По дату
-            </Typography>
             <input
               type="date"
               value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
               onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : null)}
+              placeholder="По"
               style={{
                 width: '100%',
-                padding: '8px',
+                padding: '4px',
                 border: '1px solid #dcdce4',
                 borderRadius: '4px',
+                fontSize: '10px',
               }}
             />
           </Box>
@@ -203,76 +202,67 @@ const VersionsPanel = ({ documentId }) => {
 
       {/* Versions List */}
       {loading ? (
-        <Flex justifyContent="center" padding={4}>
+        <Flex justifyContent="center" padding={2}>
           <Loader small />
         </Flex>
       ) : versions.length === 0 ? (
-        <Typography variant="pi" textColor="neutral500">
-          Нет сохраненных версий
+        <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+          Нет версий
         </Typography>
       ) : (
-        <Flex direction="column" gap={2}>
+        <Flex direction="column" gap={1}>
           {versions.map((version, index) => (
             <React.Fragment key={version.id}>
               <Box
-                padding={3}
+                padding={2}
                 background={index === 0 ? 'primary100' : 'neutral0'}
                 hasRadius
                 style={{
                   border: `1px solid ${index === 0 ? '#7b79ff' : '#dcdce4'}`,
                 }}
               >
-                <Flex justifyContent="space-between" alignItems="flex-start">
-                  <Flex direction="column" gap={1} style={{ flex: 1 }}>
-                    {/* Version label */}
-                    <Flex alignItems="center" gap={2}>
-                      <Typography variant="omega" fontWeight="bold">
-                        {version.version_label || `Версия ${version.version_number}`}
-                      </Typography>
-                      {index === 0 && (
-                        <Badge backgroundColor="primary100" textColor="primary600">
-                          Текущая
-                        </Badge>
-                      )}
-                      {version.is_auto_save && (
-                        <Badge backgroundColor="neutral100" textColor="neutral600">
-                          Авто
-                        </Badge>
-                      )}
-                    </Flex>
-
-                    {/* Date and user */}
-                    <Typography variant="pi" textColor="neutral500">
-                      {formatDate(version.created_at_snapshot)} — {version.user_names}
+                <Flex direction="column" gap={1}>
+                  {/* Version label */}
+                  <Flex alignItems="center" gap={1} style={{ flexWrap: 'wrap' }}>
+                    <Typography variant="pi" fontWeight="bold" style={{ fontSize: '11px' }}>
+                      {version.version_label || `v${version.version_number}`}
                     </Typography>
-
-                    {/* Change summary */}
-                    {version.change_summary && (
-                      <Typography variant="pi" textColor="neutral500">
-                        {version.change_summary}
-                      </Typography>
+                    {index === 0 && (
+                      <Badge backgroundColor="primary100" textColor="primary600" size="S" style={{ fontSize: '9px' }}>
+                        Текущая
+                      </Badge>
+                    )}
+                    {version.is_auto_save && (
+                      <Badge backgroundColor="neutral100" textColor="neutral600" size="S" style={{ fontSize: '9px' }}>
+                        Авто
+                      </Badge>
                     )}
                   </Flex>
 
+                  {/* Date and user */}
+                  <Typography variant="pi" textColor="neutral500" style={{ fontSize: '10px' }}>
+                    {formatDate(version.created_at_snapshot)} — {version.user_names}
+                  </Typography>
+
                   {/* Actions (not for current version) */}
                   {index !== 0 && (
-                    <Flex gap={2} style={{ flexShrink: 0, marginLeft: '8px' }}>
+                    <Flex gap={1} marginTop={1}>
                       <Button
                         variant={selectedVersion?.id === version.id ? 'secondary' : 'ghost'}
                         size="S"
                         onClick={() => handleViewDiff(version)}
-                        startIcon={<Eye />}
+                        style={{ padding: '2px 6px', fontSize: '10px', flex: 1 }}
                       >
-                        {selectedVersion?.id === version.id ? 'Скрыть' : 'Сравнить'}
+                        {selectedVersion?.id === version.id ? 'Скрыть' : '👁 Сравнить'}
                       </Button>
                       <Button
                         variant="secondary"
                         size="S"
                         onClick={() => handleRestore(version)}
                         disabled={restoring === version.id}
-                        startIcon={<ArrowLeft />}
+                        style={{ padding: '2px 6px', fontSize: '10px', flex: 1 }}
                       >
-                        {restoring === version.id ? '...' : 'Восстановить'}
+                        {restoring === version.id ? '...' : '↩ Восст.'}
                       </Button>
                     </Flex>
                   )}
@@ -282,16 +272,16 @@ const VersionsPanel = ({ documentId }) => {
               {/* Inline Diff View */}
               {selectedVersion?.id === version.id && (
                 <Box
-                  padding={3}
+                  padding={2}
                   background="neutral100"
                   hasRadius
                   style={{ border: '1px solid #dcdce4' }}
                 >
-                  <Typography variant="omega" fontWeight="bold" marginBottom={2}>
-                    Сравнение с текущей версией
+                  <Typography variant="pi" fontWeight="bold" style={{ fontSize: '10px', marginBottom: '4px' }}>
+                    Сравнение
                   </Typography>
                   {diffLoading ? (
-                    <Flex justifyContent="center" padding={4}>
+                    <Flex justifyContent="center" padding={2}>
                       <Loader small />
                     </Flex>
                   ) : (

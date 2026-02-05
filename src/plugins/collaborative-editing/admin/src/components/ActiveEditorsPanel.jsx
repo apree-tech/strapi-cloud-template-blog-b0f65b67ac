@@ -56,29 +56,29 @@ const ActiveEditorsPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={4}>
+    <Box padding={2}>
       {/* Connection status */}
-      <Flex alignItems="center" gap={2} marginBottom={4}>
+      <Flex alignItems="center" gap={1} marginBottom={2}>
         <Box
-          width="8px"
-          height="8px"
+          width="6px"
+          height="6px"
           borderRadius="50%"
           background={connected ? 'success500' : 'danger500'}
         />
-        <Typography variant="pi" textColor="neutral600">
-          {connected ? 'Connected' : 'Disconnected'}
+        <Typography variant="pi" textColor="neutral600" style={{ fontSize: '11px' }}>
+          {connected ? 'Online' : 'Offline'}
         </Typography>
       </Flex>
 
       {/* Editors list */}
       {editors.length === 0 ? (
-        <Typography variant="pi" textColor="neutral500">
-          No one else is editing
+        <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+          Никто не редактирует
         </Typography>
       ) : (
-        <Flex direction="column" alignItems="flex-start" gap={3}>
-          <Typography variant="sigma" textColor="neutral600">
-            {editors.length} {editors.length === 1 ? 'person' : 'people'} editing
+        <Flex direction="column" alignItems="flex-start" gap={2}>
+          <Typography variant="pi" textColor="neutral600" style={{ fontSize: '11px' }}>
+            {editors.length} {editors.length === 1 ? 'редактор' : 'редакторов'}
           </Typography>
 
           {/* Sort editors so current user is first */}
@@ -96,19 +96,19 @@ const ActiveEditorsPanel = ({ documentId }) => {
             );
 
             return (
-              <Flex key={editor.userId} alignItems="center" gap={3}>
+              <Flex key={editor.userId} alignItems="center" gap={2}>
                 <Box position="relative">
                   <Box
                     style={{
                       backgroundColor: color,
                       color: 'white',
-                      width: '32px',
-                      height: '32px',
+                      width: '24px',
+                      height: '24px',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '12px',
+                      fontSize: '10px',
                       fontWeight: '600',
                     }}
                   >
@@ -118,33 +118,25 @@ const ActiveEditorsPanel = ({ documentId }) => {
                   <Box
                     position="absolute"
                     style={{
-                      bottom: '0',
-                      right: '0',
-                      width: '10px',
-                      height: '10px',
+                      bottom: '-1px',
+                      right: '-1px',
+                      width: '8px',
+                      height: '8px',
                       borderRadius: '50%',
                       backgroundColor: '#328048',
-                      border: '2px solid white',
+                      border: '1.5px solid white',
                     }}
                   />
                 </Box>
 
-                <Flex direction="column" alignItems="flex-start" gap={1}>
-                  <Typography variant="omega" fontWeight="semiBold">
-                    {editor.userName}{isCurrentUser ? ' (you)' : ''}
+                <Flex direction="column" alignItems="flex-start" gap={0}>
+                  <Typography variant="pi" fontWeight="semiBold" style={{ fontSize: '12px' }}>
+                    {editor.userName}{isCurrentUser ? ' (вы)' : ''}
                   </Typography>
-                  {editor.userRole && (
-                    <Typography variant="pi" textColor="neutral500">
-                      {editor.userRole}
-                    </Typography>
-                  )}
                   {currentField && (
-                    <Badge
-                      size="S"
-                      style={{ backgroundColor: color, color: 'white' }}
-                    >
-                      Editing: {currentField[0].split('.').pop()}
-                    </Badge>
+                    <Typography variant="pi" textColor="neutral500" style={{ fontSize: '10px' }}>
+                      {currentField[0].split('.').pop()}
+                    </Typography>
                   )}
                 </Flex>
               </Flex>
@@ -154,9 +146,9 @@ const ActiveEditorsPanel = ({ documentId }) => {
       )}
 
       {/* Sync status */}
-      <Box marginTop={4} paddingTop={4} borderStyle="solid" borderWidth="1px 0 0 0" borderColor="neutral200">
-        <Typography variant="pi" textColor={yjs?.synced ? 'success600' : 'neutral500'}>
-          {yjs?.synced ? '✓ Real-time sync active' : 'Syncing...'}
+      <Box marginTop={2} paddingTop={2} borderStyle="solid" borderWidth="1px 0 0 0" borderColor="neutral200">
+        <Typography variant="pi" textColor={yjs?.synced ? 'success600' : 'neutral500'} style={{ fontSize: '10px' }}>
+          {yjs?.synced ? '✓ Синхронизировано' : 'Синхронизация...'}
         </Typography>
       </Box>
 
