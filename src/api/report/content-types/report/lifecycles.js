@@ -301,6 +301,35 @@ module.exports = {
         `📋 Данные прошлого месяца скопированы из отчёта за ${monthName}`
       );
     }
+
+    // Send notification if created as published
+    if (result.publishedAt && !result.telegram_notified) {
+      strapi.log.info(`[Telegram] afterCreate: report created as published, checking model...`);
+      try {
+        const report = await strapi.entityService.findOne(
+          'api::report.report',
+          result.id,
+          { populate: ['model'] }
+        );
+
+        if (report?.model?.telegram) {
+          strapi.log.info(`[Telegram] Sending notification from afterCreate for model: ${report.model.name}`);
+          const sent = await telegramService.notifyModelAboutReport(report.model, {
+            title: result.title,
+            dateFrom: result.dateFrom,
+            uuid: result.uuid,
+          });
+
+          if (sent) {
+            await strapi.entityService.update('api::report.report', result.id, {
+              data: { telegram_notified: true },
+            });
+          }
+        }
+      } catch (error) {
+        strapi.log.error('[Telegram] afterCreate error:', error);
+      }
+    }
   },
 
   async beforeUpdate(event) {
@@ -363,11 +392,32 @@ module.exports = {
     }
 
     // Send Telegram notification if report was just published
-    if (event.state?.isBeingPublished && event.state?.model) {
-      const model = event.state.model;
+    // First check if beforeUpdate set the state
+    let model = event.state?.model;
+    let shouldNotify = event.state?.isBeingPublished;
 
+    // Fallback: check directly if published and notification not sent
+    if (!shouldNotify && result.publishedAt && !result.telegram_notified && !params.data?.telegram_notified) {
+      strapi.log.info(`[Telegram] afterUpdate fallback check: publishedAt=${result.publishedAt}`);
+      try {
+        const report = await strapi.entityService.findOne(
+          'api::report.report',
+          result.id,
+          { populate: ['model'] }
+        );
+        if (report?.model?.telegram) {
+          model = report.model;
+          shouldNotify = true;
+          strapi.log.info(`[Telegram] Fallback: found model ${model.name} with telegram ${model.telegram}`);
+        }
+      } catch (err) {
+        strapi.log.error('[Telegram] Fallback check error:', err);
+      }
+    }
+
+    if (shouldNotify && model) {
       strapi.log.info(
-        `Report "${result.title}" published for model "${model.name}"`
+        `[Telegram] Sending notification: "${result.title}" for model "${model.name}"`
       );
 
       // Send Telegram notification
