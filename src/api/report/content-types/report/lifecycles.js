@@ -307,23 +307,25 @@ module.exports = {
     const { data, where } = event.params;
     event.params.data = processSocialMediaStats(data);
 
-    // Check if report is being published (publishedAt changes from null to a value)
+    // Check if report is being published
     if (data.publishedAt) {
       try {
-        // Get current report state to check if it was previously unpublished
         const currentReport = await strapi.entityService.findOne(
           'api::report.report',
           where.id,
           { populate: ['model'] }
         );
 
-        if (currentReport && !currentReport.publishedAt && !currentReport.telegram_notified) {
-          // Report is being published for the first time and notification not yet sent
+        strapi.log.info(`[Telegram] beforeUpdate: publishedAt=${data.publishedAt}, telegram_notified=${currentReport?.telegram_notified}, model=${currentReport?.model?.name}`);
+
+        // Send notification if not already sent
+        if (currentReport && !currentReport.telegram_notified && currentReport.model) {
           event.state = event.state || {};
           event.state.isBeingPublished = true;
           event.state.model = currentReport.model;
           event.state.reportTitle = currentReport.title || data.title;
           event.state.reportDateFrom = currentReport.dateFrom || data.dateFrom;
+          strapi.log.info(`[Telegram] Will send notification for model: ${currentReport.model.name}`);
         }
       } catch (error) {
         strapi.log.error('Error checking publication state:', error);
