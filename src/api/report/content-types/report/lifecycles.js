@@ -332,7 +332,33 @@ module.exports = {
   },
 
   async afterUpdate(event) {
-    const { result } = event;
+    const { result, params } = event;
+
+    // Create version on manual save (not on publish-only updates)
+    // Skip if this is just a telegram_notified flag update
+    if (result.documentId && !params.data?.telegram_notified) {
+      try {
+        const versionService = strapi.service('api::report-version.report-version');
+        if (versionService) {
+          // Get user info from context if available
+          const userId = strapi.requestContext?.get()?.state?.user?.id || 0;
+          const userName = strapi.requestContext?.get()?.state?.user?.firstname || 'System';
+
+          const version = await versionService.createVersion(
+            result.documentId,
+            [userId],
+            userName,
+            false // isAutoSave = false for manual saves
+          );
+
+          if (version) {
+            strapi.log.info(`[Version] Created manual version ${version.version_number} for report ${result.documentId}`);
+          }
+        }
+      } catch (error) {
+        strapi.log.error('[Version] Error creating version on save:', error);
+      }
+    }
 
     // Send Telegram notification if report was just published
     if (event.state?.isBeingPublished && event.state?.model) {
