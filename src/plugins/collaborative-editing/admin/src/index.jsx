@@ -290,7 +290,6 @@ export default {
           CommentsSidePanel,
           CopyFromPreviousSidePanel,
           ActiveEditorsSidePanel,
-          HistorySidePanel,
           VersionsSidePanel,
         ]);
         console.log('[Collaborative Editing] Side panels registered');

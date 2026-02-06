@@ -139,12 +139,9 @@ const VersionsPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={2}>
-      {/* Header */}
-      <Flex justifyContent="space-between" alignItems="center" marginBottom={2}>
-        <Typography variant="pi" fontWeight="bold" style={{ fontSize: '12px' }}>
-          Версии
-        </Typography>
+    <Box padding={2} style={{ overflow: 'hidden', maxWidth: '100%' }}>
+      {/* Refresh button */}
+      <Flex justifyContent="flex-end" marginBottom={2}>
         <Button variant="ghost" size="S" onClick={fetchVersions} style={{ padding: '4px 8px', minWidth: 'auto' }}>
           ↻
         </Button>
@@ -210,7 +207,7 @@ const VersionsPanel = ({ documentId }) => {
           Нет версий
         </Typography>
       ) : (
-        <Flex direction="column" gap={1}>
+        <Flex direction="column" gap={1} style={{ width: '100%' }}>
           {versions.map((version, index) => (
             <React.Fragment key={version.id}>
               <Box
@@ -219,6 +216,9 @@ const VersionsPanel = ({ documentId }) => {
                 hasRadius
                 style={{
                   border: `1px solid ${index === 0 ? '#7b79ff' : '#dcdce4'}`,
+                  width: '100%',
+                  minHeight: '76px',
+                  boxSizing: 'border-box',
                 }}
               >
                 <Flex direction="column" gap={1}>
@@ -246,23 +246,23 @@ const VersionsPanel = ({ documentId }) => {
 
                   {/* Actions (not for current version) */}
                   {index !== 0 && (
-                    <Flex gap={1} marginTop={1}>
+                    <Flex gap={1}>
                       <Button
                         variant={selectedVersion?.id === version.id ? 'secondary' : 'ghost'}
                         size="S"
                         onClick={() => handleViewDiff(version)}
-                        style={{ padding: '2px 6px', fontSize: '10px', flex: 1 }}
+                        style={{ padding: '1px 4px', fontSize: '9px', flex: 1, minHeight: 'auto', lineHeight: 1.2 }}
                       >
-                        {selectedVersion?.id === version.id ? 'Скрыть' : '👁 Сравнить'}
+                        {selectedVersion?.id === version.id ? 'Скрыть' : 'Сравнить'}
                       </Button>
                       <Button
                         variant="secondary"
                         size="S"
                         onClick={() => handleRestore(version)}
                         disabled={restoring === version.id}
-                        style={{ padding: '2px 6px', fontSize: '10px', flex: 1 }}
+                        style={{ padding: '1px 4px', fontSize: '9px', flex: 1, minHeight: 'auto', lineHeight: 1.2 }}
                       >
-                        {restoring === version.id ? '...' : '↩ Восст.'}
+                        {restoring === version.id ? '...' : 'Восст.'}
                       </Button>
                     </Flex>
                   )}
@@ -275,7 +275,7 @@ const VersionsPanel = ({ documentId }) => {
                   padding={2}
                   background="neutral100"
                   hasRadius
-                  style={{ border: '1px solid #dcdce4' }}
+                  style={{ border: '1px solid #dcdce4', overflow: 'auto', width: '100%', boxSizing: 'border-box', wordBreak: 'break-word' }}
                 >
                   <Typography variant="pi" fontWeight="bold" style={{ fontSize: '10px', marginBottom: '4px' }}>
                     Сравнение

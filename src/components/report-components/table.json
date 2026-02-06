@@ -1,7 +1,7 @@
 {
   "collectionName": "components_report_components_tables",
   "info": {
-    "displayName": "table",
+    "displayName": "table-simple",
     "description": "Таблица с визуальным редактором"
   },
   "options": {},

@@ -92,27 +92,30 @@ const CopyFromPreviousPanel = ({ documentId }) => {
   }
 
   return (
-    <Box padding={2}>
+    <Box padding={2} style={{ overflow: 'hidden' }}>
       <Flex direction="column" gap={2}>
-        <Typography variant="pi" textColor="neutral600" style={{ fontSize: '11px' }}>
-          Текущий → Прошлый месяц
-        </Typography>
-
         {sources.length > 0 ? (
           <>
-            <SingleSelect
-              placeholder="Авто"
-              value={selectedSource}
-              onChange={setSelectedSource}
-              onClear={() => setSelectedSource(null)}
-              size="S"
-            >
-              {sources.map((source) => (
-                <SingleSelectOption key={source.id} value={source.id}>
-                  {source.monthName}
-                </SingleSelectOption>
-              ))}
-            </SingleSelect>
+            <Flex alignItems="center" gap={1} style={{ flexWrap: 'wrap' }}>
+              <Box style={{ flex: 1, minWidth: '80px' }}>
+                <SingleSelect
+                  placeholder="Авто"
+                  value={selectedSource}
+                  onChange={setSelectedSource}
+                  onClear={() => setSelectedSource(null)}
+                  size="S"
+                >
+                  {sources.map((source) => (
+                    <SingleSelectOption key={source.id} value={source.id}>
+                      {source.monthName}
+                    </SingleSelectOption>
+                  ))}
+                </SingleSelect>
+              </Box>
+              <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+                → Прошлый
+              </Typography>
+            </Flex>
 
             <Button
               variant="secondary"
@@ -121,12 +124,13 @@ const CopyFromPreviousPanel = ({ documentId }) => {
               disabled={loading}
               fullWidth
               size="S"
+              style={{ minWidth: 0 }}
             >
-              📋 Копировать
+              Копировать
             </Button>
           </>
         ) : (
-          <Typography variant="pi" textColor="neutral500" style={{ fontSize: '11px' }}>
+          <Typography variant="pi" textColor="neutral500" style={{ fontSize: '12px' }}>
             Нет отчётов для копирования
           </Typography>
         )}

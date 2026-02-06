@@ -413,6 +413,23 @@ module.exports = {
         strapi.log.debug(`[DomSync] Broadcast field update: ${fieldPath}`);
       });
 
+      // Structure change (blocks added/removed) - notify others
+      socket.on('structure-changed', (data) => {
+        const { reportId, fingerprint, userName, senderId } = data;
+        if (!reportId) return;
+
+        const room = `report:${reportId}`;
+
+        // Broadcast to all others in the room
+        socket.to(room).emit('structure-changed', {
+          fingerprint,
+          userName,
+          senderId,
+        });
+
+        strapi.log.info(`[StructureSync] ${userName} changed structure for ${reportId}`);
+      });
+
       // Client confirms save is complete before version creation
       socket.on('version-ready', ({ reportId, saved }) => {
         if (!reportId) return;
@@ -541,6 +558,6 @@ module.exports = {
       } catch (error) {
         strapi.log.error('[Version] Error during auto-versioning:', error);
       }
-    }, 60 * 1000); // 1 minute
+    }, 5 * 60 * 1000); // 5 minutes
   },
 };

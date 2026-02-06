@@ -4,7 +4,7 @@ import { Plus, Trash } from '@strapi/icons';
 import { useDomSync } from '../hooks/useDomSync';
 
 const TableDataEditor = ({ name, value, onChange, disabled }) => {
-  const [data, setData] = useState({ headers: [], rows: [], totals: [], autoTotals: true });
+  const [data, setData] = useState({ title: '', headers: [], rows: [], totals: [], autoTotals: true });
 
   // Parse number from string (handles spaces, commas)
   const parseNumber = (str) => {
@@ -51,6 +51,7 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
           setData({
+            title: parsed.title || '',
             headers: Array.isArray(parsed.headers) ? parsed.headers : [],
             rows: Array.isArray(parsed.rows) ? parsed.rows : [],
             totals: Array.isArray(parsed.totals) ? parsed.totals : [],
@@ -65,13 +66,22 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
 
   // DOM sync for real-time collaboration
   const handleRemoteUpdate = useCallback((newData) => {
-    setData(newData);
-    onChange({
-      target: {
-        name,
-        value: newData,
-        type: 'json',
-      },
+    // Use functional update to check if data actually changed
+    setData(prevData => {
+      const prevJson = JSON.stringify(prevData);
+      const newJson = JSON.stringify(newData);
+      if (prevJson === newJson) {
+        return prevData; // No change, skip update
+      }
+      // Only update form if data actually changed
+      onChange({
+        target: {
+          name,
+          value: newData,
+          type: 'json',
+        },
+      });
+      return newData;
     });
   }, [name, onChange]);
 
@@ -170,9 +180,15 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     }
   };
 
+  // Update table title
+  const updateTitle = (newTitle) => {
+    updateValue({ ...data, title: newTitle });
+  };
+
   // Add default structure
   const addDefaults = () => {
     updateValue({
+      title: '',
       headers: ['Название', 'Значение'],
       rows: [['', '']],
       totals: [],
@@ -222,36 +238,45 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
           backgroundColor: '#212134',
         }}
       >
-        {/* Header */}
-        <Flex
-          style={{
-            backgroundColor: '#1a1a2e',
-            padding: '12px 16px',
-            borderBottom: '1px solid #32324d',
-          }}
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <Typography
-            variant="beta"
-            fontWeight="bold"
-            style={{ color: '#ffffff', fontSize: '16px' }}
+        {/* Header with title input and controls */}
+        {hasData && (
+          <Flex
+            style={{
+              backgroundColor: '#1a1a2e',
+              padding: '8px 16px',
+              borderBottom: '1px solid #32324d',
+            }}
+            alignItems="center"
+            justifyContent="space-between"
+            gap={3}
           >
-            Таблица данных
-          </Typography>
-          {hasData && (
-            <Flex gap={2}>
-              <Button
-                variant="secondary"
-                size="S"
-                onClick={toggleTotals}
-                disabled={disabled}
-              >
-                {data.totals.length > 0 ? 'Убрать итого' : 'Добавить итого'}
-              </Button>
-            </Flex>
-          )}
-        </Flex>
+            <input
+              type="text"
+              value={data.title || ''}
+              onChange={(e) => updateTitle(e.target.value)}
+              placeholder="Введите название таблицы"
+              disabled={disabled}
+              style={{
+                flex: 1,
+                border: '1px solid #32324d',
+                borderRadius: '4px',
+                background: '#212134',
+                padding: '6px 10px',
+                fontSize: '14px',
+                color: '#ffffff',
+                outline: 'none',
+              }}
+            />
+            <Button
+              variant="secondary"
+              size="S"
+              onClick={toggleTotals}
+              disabled={disabled}
+            >
+              {data.totals.length > 0 ? 'Убрать итого' : 'Добавить итого'}
+            </Button>
+          </Flex>
+        )}
 
         {hasData ? (
           <Box style={{ overflowX: 'auto' }}>

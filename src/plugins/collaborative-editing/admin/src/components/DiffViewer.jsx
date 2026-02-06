@@ -15,31 +15,39 @@ const DiffViewer = ({ diff }) => {
     if (!changes || !Array.isArray(changes)) return null;
 
     return (
-      <Box style={{ lineHeight: 1.6 }}>
+      <Box style={{ lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
         {changes.map((part, index) => (
           <span
             key={index}
             style={{
               backgroundColor: part.added
-                ? '#d4edda'
+                ? '#f0f0ff'
                 : part.removed
-                  ? '#f8d7da'
+                  ? '#f6ecf0'
                   : 'transparent',
               color: part.added
-                ? '#155724'
+                ? '#4945ff'
                 : part.removed
-                  ? '#721c24'
+                  ? '#a5a0b8'
                   : 'inherit',
               textDecoration: part.removed ? 'line-through' : 'none',
-              padding: part.added || part.removed ? '0 2px' : '0',
-              borderRadius: '2px',
+              padding: part.added || part.removed ? '1px 3px' : '0',
+              borderRadius: '4px',
             }}
           >
-            {part.value}
+            {typeof part.value === 'string' ? part.value : JSON.stringify(part.value)}
           </span>
         ))}
       </Box>
     );
+  };
+
+  // Safely stringify a value for display
+  const displayValue = (val) => {
+    if (val === null || val === undefined) return '(пусто)';
+    if (typeof val === 'string') return val || '(пусто)';
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    return JSON.stringify(val).substring(0, 200);
   };
 
   // Render simple old/new value diff
@@ -53,10 +61,10 @@ const DiffViewer = ({ diff }) => {
           textColor="danger600"
           style={{ textDecoration: 'line-through' }}
         >
-          - {change.old || '(пусто)'}
+          - {displayValue(change.old)}
         </Typography>
         <Typography variant="pi" textColor="success600">
-          + {change.new || '(пусто)'}
+          + {displayValue(change.new)}
         </Typography>
       </Flex>
     );
@@ -79,24 +87,9 @@ const DiffViewer = ({ diff }) => {
   // Render block change
   const renderBlockChange = (change, index) => {
     const typeConfig = {
-      added: {
-        text: 'Добавлен',
-        bg: '#d4edda',
-        border: '#28a745',
-        color: '#155724',
-      },
-      removed: {
-        text: 'Удалён',
-        bg: '#f8d7da',
-        border: '#dc3545',
-        color: '#721c24',
-      },
-      modified: {
-        text: 'Изменён',
-        bg: '#fff3cd',
-        border: '#ffc107',
-        color: '#856404',
-      },
+      added: { text: 'Добавлен', accent: '#328048', textColor: 'success700' },
+      removed: { text: 'Удалён', accent: '#d02b20', textColor: 'danger600' },
+      modified: { text: 'Изменён', accent: '#7b79ff', textColor: 'primary600' },
     };
 
     const config = typeConfig[change.type] || typeConfig.modified;
@@ -104,32 +97,31 @@ const DiffViewer = ({ diff }) => {
     return (
       <Box
         key={index}
-        padding={3}
+        padding={2}
         marginBottom={2}
         hasRadius
+        background="neutral100"
         style={{
-          backgroundColor: config.bg,
-          border: `1px solid ${config.border}`,
+          borderLeft: `3px solid ${config.accent}`,
+          border: '1px solid #dcdce4',
+          borderLeftWidth: '3px',
+          borderLeftColor: config.accent,
         }}
       >
-        <Typography
-          variant="omega"
-          fontWeight="bold"
-          style={{ color: config.color }}
-        >
+        <Typography variant="pi" fontWeight="bold" textColor={config.textColor} style={{ fontSize: '11px' }}>
           {config.text}: {getComponentName(change.component)} (#{change.index + 1})
         </Typography>
 
         {/* Show added block info */}
         {change.type === 'added' && change.block && (
-          <Box marginTop={2}>
+          <Box marginTop={1}>
             {change.block.title && (
-              <Typography variant="pi" style={{ color: config.color }}>
+              <Typography variant="pi" textColor="neutral700" style={{ fontSize: '10px' }}>
                 Заголовок: {change.block.title}
               </Typography>
             )}
             {change.block.content && (
-              <Typography variant="pi" style={{ color: config.color }}>
+              <Typography variant="pi" textColor="neutral600" style={{ fontSize: '10px' }}>
                 Содержимое: {typeof change.block.content === 'string'
                   ? change.block.content.substring(0, 100)
                   : JSON.stringify(change.block.content).substring(0, 100)}...
@@ -140,11 +132,12 @@ const DiffViewer = ({ diff }) => {
 
         {/* Show removed block info */}
         {change.type === 'removed' && change.block && (
-          <Box marginTop={2}>
+          <Box marginTop={1}>
             {change.block.title && (
               <Typography
                 variant="pi"
-                style={{ color: config.color, textDecoration: 'line-through' }}
+                textColor="neutral500"
+                style={{ textDecoration: 'line-through', fontSize: '10px' }}
               >
                 Заголовок: {change.block.title}
               </Typography>
@@ -154,10 +147,10 @@ const DiffViewer = ({ diff }) => {
 
         {/* Show modified block changes */}
         {change.type === 'modified' && change.changes && (
-          <Box marginTop={2}>
+          <Box marginTop={1}>
             {Object.entries(change.changes).map(([field, fieldDiff]) => (
-              <Box key={field} marginBottom={2}>
-                <Typography variant="pi" fontWeight="semiBold">
+              <Box key={field} marginBottom={1}>
+                <Typography variant="pi" fontWeight="semiBold" textColor="neutral700" style={{ fontSize: '10px' }}>
                   {field}:
                 </Typography>
                 {Array.isArray(fieldDiff) ? (
@@ -191,8 +184,8 @@ const DiffViewer = ({ diff }) => {
     <Box>
       {/* Title diff */}
       {diff.title && (
-        <Box marginBottom={4}>
-          <Typography variant="omega" fontWeight="bold" marginBottom={2}>
+        <Box marginBottom={3}>
+          <Typography variant="pi" fontWeight="bold" textColor="neutral800" style={{ fontSize: '11px' }}>
             Заголовок:
           </Typography>
           {renderWordDiff(diff.title)}
@@ -201,8 +194,8 @@ const DiffViewer = ({ diff }) => {
 
       {/* Date diffs */}
       {diff.dateFrom && (
-        <Box marginBottom={3}>
-          <Typography variant="omega" fontWeight="bold" marginBottom={1}>
+        <Box marginBottom={2}>
+          <Typography variant="pi" fontWeight="bold" textColor="neutral800" style={{ fontSize: '11px' }}>
             Дата начала:
           </Typography>
           {renderSimpleDiff(diff.dateFrom)}
@@ -210,8 +203,8 @@ const DiffViewer = ({ diff }) => {
       )}
 
       {diff.dateTo && (
-        <Box marginBottom={3}>
-          <Typography variant="omega" fontWeight="bold" marginBottom={1}>
+        <Box marginBottom={2}>
+          <Typography variant="pi" fontWeight="bold" textColor="neutral800" style={{ fontSize: '11px' }}>
             Дата окончания:
           </Typography>
           {renderSimpleDiff(diff.dateTo)}
@@ -221,7 +214,7 @@ const DiffViewer = ({ diff }) => {
       {/* Content blocks diff */}
       {diff.content_blocks && diff.content_blocks.length > 0 && (
         <Box>
-          <Typography variant="omega" fontWeight="bold" marginBottom={2}>
+          <Typography variant="pi" fontWeight="bold" textColor="neutral800" style={{ fontSize: '11px', marginBottom: '4px' }}>
             Блоки контента:
           </Typography>
           {diff.content_blocks.map((change, index) =>

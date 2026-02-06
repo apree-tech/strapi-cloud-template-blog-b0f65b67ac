@@ -30,8 +30,7 @@
     },
     "telegram_notified": {
       "type": "boolean",
-      "default": false,
-      "private": true
+      "default": false
     },
     "accounts": {
       "type": "relation",

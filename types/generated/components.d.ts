@@ -170,7 +170,7 @@ export interface ReportComponentsTable extends Struct.ComponentSchema {
   collectionName: 'components_report_components_tables';
   info: {
     description: '\u0422\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u0432\u0438\u0437\u0443\u0430\u043B\u044C\u043D\u044B\u043C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u043E\u043C';
-    displayName: 'table';
+    displayName: 'table-simple';
   };
   attributes: {
     contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
