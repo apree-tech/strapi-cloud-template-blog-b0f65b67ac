@@ -23,8 +23,8 @@ module.exports = {
         return ctx.badRequest('reportId is required');
       }
 
-      // For admins, check if report exists
-      if (user.isAdmin && user.type === 'user') {
+      // For admins and head_pm, check if report exists
+      if ((user.isAdmin && user.type === 'user') || user.type === 'head_pm') {
         const report = await strapi.db.query('api::report.report').findOne({
           where: {
             uuid: reportId,

@@ -14,16 +14,23 @@
   "dependencies": {
     "@strapi/plugin-cloud": "5.15.0",
     "@strapi/plugin-users-permissions": "5.15.0",
+    "@strapi/provider-email-nodemailer": "^5.34.0",
     "@strapi/strapi": "5.15.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "11.3.0",
+    "diff": "^8.0.3",
     "fs-extra": "^10.0.0",
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^2.1.27",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
-    "styled-components": "^6.0.0"
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "styled-components": "^6.0.0",
+    "y-protocols": "^1.0.7",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29"
   },
   "engines": {
     "node": ">=18.0.0 <=22.x.x",

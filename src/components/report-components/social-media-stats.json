@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_report_components_social_media_stats",
+  "info": {
+    "displayName": "social-media-stats",
+    "description": "Статистика соцсетей с автоматическим расчётом изменений"
+  },
+  "options": {},
+  "attributes": {
+    "metrics": {
+      "type": "customField",
+      "customField": "plugin::collaborative-editing.social-metrics"
+    },
+    "contentWidth": {
+      "type": "enumeration",
+      "default": "w100",
+      "enum": ["w25", "w50", "w75", "w100"]
+    }
+  }
+}

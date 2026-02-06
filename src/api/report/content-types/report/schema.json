@@ -28,6 +28,10 @@
       "target": "api::model.model",
       "inversedBy": "reports"
     },
+    "telegram_notified": {
+      "type": "boolean",
+      "default": false
+    },
     "accounts": {
       "type": "relation",
       "relation": "manyToMany",
@@ -55,7 +59,11 @@
         "report-components.text-block",
         "report-components.chart-block",
         "report-components.table-data",
-        "report-components.section"
+        "report-components.table",
+        "report-components.section",
+        "report-components.social-media-stats",
+        "report-components.revenue-table",
+        "report-components.comment-block"
       ]
     }
   }

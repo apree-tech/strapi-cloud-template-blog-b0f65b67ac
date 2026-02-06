@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_report_components_tables",
+  "info": {
+    "displayName": "table-simple",
+    "description": "Таблица с визуальным редактором"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "data": {
+      "type": "customField",
+      "customField": "plugin::collaborative-editing.table-editor"
+    },
+    "contentWidth": {
+      "type": "enumeration",
+      "default": "w100",
+      "enum": ["w25", "w50", "w75", "w100"]
+    }
+  }
+}

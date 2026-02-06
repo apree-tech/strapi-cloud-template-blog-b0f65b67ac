@@ -27,6 +27,9 @@
       "relation": "oneToMany",
       "target": "api::report.report",
       "mappedBy": "model"
+    },
+    "telegram": {
+      "type": "string"
     }
   }
 }
