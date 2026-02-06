@@ -37,11 +37,14 @@ module.exports = {
     const { documentId } = ctx.params;
     const { month, year } = ctx.query;
 
+    strapi.log.info(`[Revenue Proxy] === Request received for documentId: ${documentId} ===`);
+
     if (!documentId) {
       return ctx.badRequest('Report documentId is required');
     }
 
     try {
+      strapi.log.info('[Revenue Proxy] Fetching report from DB...');
       // Get report with model relation
       const reports = await strapi.entityService.findMany('api::report.report', {
         filters: { documentId },
@@ -90,6 +93,7 @@ module.exports = {
         year: targetYear.toString(),
       });
 
+      strapi.log.info(`[Revenue Proxy] Calling analytics API: ${ANALYTICS_API_URL}/api/revenue/model?${params}`);
       const response = await fetch(`${ANALYTICS_API_URL}/api/revenue/model?${params}`);
 
       if (!response.ok) {
