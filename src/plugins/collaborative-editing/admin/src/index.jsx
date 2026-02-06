@@ -42,7 +42,7 @@ const VersionsSidePanel = ({ document, model, collectionType }) => {
   }
 
   return {
-    title: 'Версии документа',
+    title: '',
     content: <VersionsPanel documentId={document?.documentId} />,
   };
 };

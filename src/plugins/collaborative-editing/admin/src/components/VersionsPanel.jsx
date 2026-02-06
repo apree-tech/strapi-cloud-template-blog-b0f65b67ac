@@ -140,8 +140,11 @@ const VersionsPanel = ({ documentId }) => {
 
   return (
     <Box padding={2} style={{ overflow: 'hidden', maxWidth: '100%' }}>
-      {/* Refresh button */}
-      <Flex justifyContent="flex-end" marginBottom={2}>
+      {/* Header with title and refresh button */}
+      <Flex justifyContent="space-between" alignItems="center" marginBottom={2}>
+        <Typography variant="sigma" textColor="neutral600" style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+          Версии документа
+        </Typography>
         <Button variant="ghost" size="S" onClick={fetchVersions} style={{ padding: '4px 8px', minWidth: 'auto' }}>
           ↻
         </Button>
