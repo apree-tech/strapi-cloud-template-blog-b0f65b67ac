@@ -4,7 +4,7 @@ import { Plus, Trash } from '@strapi/icons';
 import { useDomSync } from '../hooks/useDomSync';
 
 const TableDataEditor = ({ name, value, onChange, disabled }) => {
-  const [data, setData] = useState({ title: '', headers: [], rows: [], totals: [], autoTotals: true });
+  const [data, setData] = useState({ title: '', headers: [], rows: [], totals: [], autoTotals: true, changeColumn: false });
 
   // Parse number from string (handles spaces, commas)
   const parseNumber = (str) => {
@@ -20,13 +20,39 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     return new Intl.NumberFormat('ru-RU').format(num);
   };
 
+  // Calculate change percentage between two values
+  const calculateChange = (current, prev) => {
+    const cur = parseNumber(current);
+    const prv = parseNumber(prev);
+    if (cur === null || prv === null) return null;
+    if (prv === 0) return cur > 0 ? 100 : 0;
+    return Math.round(((cur - prv) / prv) * 1000) / 10;
+  };
+
+  // Get indicator emoji
+  const getIndicator = (change) => {
+    if (change > 0) return '📈';
+    if (change < 0) return '📉';
+    return '➡️';
+  };
+
+  // Format change value for display
+  const formatChangeValue = (change) => {
+    if (change === null) return '';
+    const indicator = getIndicator(change);
+    const sign = change > 0 ? '+' : '';
+    return `${indicator} ${sign}${change.toFixed(1)}%`;
+  };
+
   // Calculate column totals from rows
-  const calculateTotals = useCallback((rows, headers) => {
+  const calculateTotals = useCallback((rows, headers, hasChangeColumn) => {
     if (!rows || rows.length === 0 || !headers || headers.length === 0) return [];
 
-    return headers.map((_, colIndex) => {
-      // First column is usually labels, skip summing
+    const totals = headers.map((_, colIndex) => {
       if (colIndex === 0) return 'Итого';
+
+      // Skip change column — calculated separately
+      if (hasChangeColumn && colIndex === headers.length - 1) return '';
 
       let sum = 0;
       let hasNumbers = false;
@@ -42,7 +68,33 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
 
       return hasNumbers ? formatNumber(sum) : '';
     });
+
+    // Calculate change for totals row
+    if (hasChangeColumn && headers.length >= 3) {
+      const changeIdx = headers.length - 1;
+      const currentIdx = changeIdx - 1;
+      const prevIdx = changeIdx - 2;
+      const change = calculateChange(totals[currentIdx], totals[prevIdx]);
+      totals[changeIdx] = change !== null ? formatChangeValue(change) : '';
+    }
+
+    return totals;
   }, []);
+
+  // Calculate change column values for all rows
+  const calculateChangeColumn = (rows, headers) => {
+    if (!rows || headers.length < 3) return rows;
+    const changeIdx = headers.length - 1;
+    const currentIdx = changeIdx - 1;
+    const prevIdx = changeIdx - 2;
+
+    return rows.map(row => {
+      const newRow = [...row];
+      const change = calculateChange(row[currentIdx], row[prevIdx]);
+      newRow[changeIdx] = change !== null ? formatChangeValue(change) : '';
+      return newRow;
+    });
+  };
 
   // Parse value on mount
   useEffect(() => {
@@ -56,6 +108,7 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
             rows: Array.isArray(parsed.rows) ? parsed.rows : [],
             totals: Array.isArray(parsed.totals) ? parsed.totals : [],
             autoTotals: parsed.autoTotals !== false,
+            changeColumn: parsed.changeColumn || false,
           });
         }
       } catch (e) {
@@ -66,14 +119,12 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
 
   // DOM sync for real-time collaboration
   const handleRemoteUpdate = useCallback((newData) => {
-    // Use functional update to check if data actually changed
     setData(prevData => {
       const prevJson = JSON.stringify(prevData);
       const newJson = JSON.stringify(newData);
       if (prevJson === newJson) {
-        return prevData; // No change, skip update
+        return prevData;
       }
-      // Only update form if data actually changed
       onChange({
         target: {
           name,
@@ -93,21 +144,20 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
 
   // Update parent form and broadcast
   const updateValue = (newData) => {
-    // Auto-calculate totals if enabled and totals row exists
-    let finalData = newData;
-    if (newData.autoTotals && newData.totals.length > 0) {
-      finalData = {
-        ...newData,
-        totals: calculateTotals(newData.rows, newData.headers),
-      };
+    let finalData = { ...newData };
+
+    // Auto-calculate change column values
+    if (finalData.changeColumn && finalData.headers.length >= 3) {
+      finalData.rows = calculateChangeColumn(finalData.rows, finalData.headers);
+    }
+
+    // Auto-calculate totals if enabled
+    if (finalData.autoTotals && finalData.totals.length > 0) {
+      finalData.totals = calculateTotals(finalData.rows, finalData.headers, finalData.changeColumn);
     }
 
     setData(finalData);
-
-    // Broadcast to other users
     broadcastUpdate(finalData);
-
-    // Update Strapi form
     onChange({
       target: {
         name,
@@ -117,21 +167,43 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     });
   };
 
-  // Add column
+  // Add column (before change column if it exists)
   const addColumn = () => {
-    const newHeaders = [...data.headers, `Колонка ${data.headers.length + 1}`];
-    const newRows = data.rows.map(row => [...row, '']);
-    const newTotals = data.totals.length > 0 ? [...data.totals, ''] : [];
+    const insertAt = data.changeColumn ? data.headers.length - 1 : data.headers.length;
+    const newHeaders = [...data.headers];
+    newHeaders.splice(insertAt, 0, `Колонка ${data.headers.length + 1}`);
+    const newRows = data.rows.map(row => {
+      const newRow = [...row];
+      newRow.splice(insertAt, 0, '');
+      return newRow;
+    });
+    const newTotals = data.totals.length > 0
+      ? (() => { const t = [...data.totals]; t.splice(insertAt, 0, ''); return t; })()
+      : [];
     updateValue({ ...data, headers: newHeaders, rows: newRows, totals: newTotals });
   };
 
   // Remove column
   const removeColumn = (colIndex) => {
     if (data.headers.length <= 1) return;
+    // Don't allow removing change column via this button
+    if (data.changeColumn && colIndex === data.headers.length - 1) return;
+
     const newHeaders = data.headers.filter((_, i) => i !== colIndex);
     const newRows = data.rows.map(row => row.filter((_, i) => i !== colIndex));
     const newTotals = data.totals.length > 0 ? data.totals.filter((_, i) => i !== colIndex) : [];
-    updateValue({ ...data, headers: newHeaders, rows: newRows, totals: newTotals });
+
+    // If removing leaves < 3 columns total and change is enabled, disable it
+    let changeColumn = data.changeColumn;
+    if (changeColumn && newHeaders.length < 3) {
+      const finalHeaders = newHeaders.slice(0, -1);
+      const finalRows = newRows.map(row => row.slice(0, -1));
+      const finalTotals = newTotals.length > 0 ? newTotals.slice(0, -1) : [];
+      updateValue({ ...data, headers: finalHeaders, rows: finalRows, totals: finalTotals, changeColumn: false });
+      return;
+    }
+
+    updateValue({ ...data, headers: newHeaders, rows: newRows, totals: newTotals, changeColumn });
   };
 
   // Add row
@@ -148,25 +220,18 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
   };
 
   // Update header
-  const updateHeader = (colIndex, value) => {
+  const updateHeader = (colIndex, val) => {
     const newHeaders = [...data.headers];
-    newHeaders[colIndex] = value;
+    newHeaders[colIndex] = val;
     updateValue({ ...data, headers: newHeaders });
   };
 
   // Update cell
-  const updateCell = (rowIndex, colIndex, value) => {
+  const updateCell = (rowIndex, colIndex, val) => {
     const newRows = [...data.rows];
     newRows[rowIndex] = [...newRows[rowIndex]];
-    newRows[rowIndex][colIndex] = value;
+    newRows[rowIndex][colIndex] = val;
     updateValue({ ...data, rows: newRows });
-  };
-
-  // Update total
-  const updateTotal = (colIndex, value) => {
-    const newTotals = [...data.totals];
-    newTotals[colIndex] = value;
-    updateValue({ ...data, totals: newTotals });
   };
 
   // Toggle totals row
@@ -174,9 +239,26 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
     if (data.totals.length > 0) {
       updateValue({ ...data, totals: [], autoTotals: true });
     } else {
-      // Initialize with calculated totals
-      const calculatedTotals = calculateTotals(data.rows, data.headers);
+      const calculatedTotals = calculateTotals(data.rows, data.headers, data.changeColumn);
       updateValue({ ...data, totals: calculatedTotals, autoTotals: true });
+    }
+  };
+
+  // Toggle change column
+  const toggleChangeColumn = () => {
+    if (data.changeColumn) {
+      // Remove change column
+      const newHeaders = data.headers.slice(0, -1);
+      const newRows = data.rows.map(row => row.slice(0, -1));
+      const newTotals = data.totals.length > 0 ? data.totals.slice(0, -1) : [];
+      updateValue({ ...data, headers: newHeaders, rows: newRows, totals: newTotals, changeColumn: false });
+    } else {
+      // Add change column (need at least 2 existing columns: label + value)
+      if (data.headers.length < 2) return;
+      const newHeaders = [...data.headers, 'Изменение'];
+      const newRows = data.rows.map(row => [...row, '']);
+      const newTotals = data.totals.length > 0 ? [...data.totals, ''] : [];
+      updateValue({ ...data, headers: newHeaders, rows: newRows, totals: newTotals, changeColumn: true });
     }
   };
 
@@ -192,7 +274,19 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
       headers: ['Название', 'Значение'],
       rows: [['', '']],
       totals: [],
+      changeColumn: false,
     });
+  };
+
+  // Check if a column is the change column
+  const isChangeCol = (colIndex) => data.changeColumn && colIndex === data.headers.length - 1;
+
+  // Parse change value for coloring
+  const getChangeColor = (cellValue) => {
+    if (!cellValue || typeof cellValue !== 'string') return '#a5a5ba';
+    if (cellValue.includes('+')) return '#5cb176';
+    if (cellValue.includes('📉')) return '#ee5e52';
+    return '#a5a5ba';
   };
 
   const cellStyle = {
@@ -267,14 +361,26 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
                 outline: 'none',
               }}
             />
-            <Button
-              variant="secondary"
-              size="S"
-              onClick={toggleTotals}
-              disabled={disabled}
-            >
-              {data.totals.length > 0 ? 'Убрать итого' : 'Добавить итого'}
-            </Button>
+            <Flex gap={2}>
+              <Button
+                variant="secondary"
+                size="S"
+                onClick={toggleTotals}
+                disabled={disabled}
+              >
+                {data.totals.length > 0 ? 'Убрать итого' : 'Добавить итого'}
+              </Button>
+              {data.headers.length >= 2 && (
+                <Button
+                  variant={data.changeColumn ? 'danger-light' : 'secondary'}
+                  size="S"
+                  onClick={toggleChangeColumn}
+                  disabled={disabled}
+                >
+                  {data.changeColumn ? 'Убрать прирост' : 'Добавить прирост'}
+                </Button>
+              )}
+            </Flex>
           </Flex>
         )}
 
@@ -285,7 +391,7 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
               <thead>
                 <tr>
                   {data.headers.map((header, colIndex) => (
-                    <th key={colIndex} style={{ ...headerStyle, minWidth: '120px' }}>
+                    <th key={colIndex} style={{ ...headerStyle, minWidth: isChangeCol(colIndex) ? '100px' : '120px' }}>
                       <Flex alignItems="center" gap={1}>
                         <input
                           type="text"
@@ -293,9 +399,9 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
                           onChange={(e) => updateHeader(colIndex, e.target.value)}
                           style={{ ...inputStyle, fontWeight: 600, color: '#a5a5ba', textTransform: 'uppercase', fontSize: '12px' }}
                           placeholder="Заголовок"
-                          disabled={disabled}
+                          disabled={disabled || isChangeCol(colIndex)}
                         />
-                        {data.headers.length > 1 && (
+                        {data.headers.length > 1 && !isChangeCol(colIndex) && (
                           <IconButton
                             onClick={() => removeColumn(colIndex)}
                             label="Удалить колонку"
@@ -329,14 +435,26 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
                   <tr key={rowIndex} style={{ backgroundColor: rowIndex % 2 === 0 ? '#212134' : '#1a1a2e' }}>
                     {row.map((cell, colIndex) => (
                       <td key={colIndex} style={cellStyle}>
-                        <input
-                          type="text"
-                          value={cell || ''}
-                          onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
-                          style={inputStyle}
-                          placeholder="—"
-                          disabled={disabled}
-                        />
+                        {isChangeCol(colIndex) ? (
+                          <span style={{
+                            padding: '6px 8px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: getChangeColor(cell),
+                            display: 'block',
+                          }}>
+                            {cell || '—'}
+                          </span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={cell || ''}
+                            onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
+                            style={inputStyle}
+                            placeholder="—"
+                            disabled={disabled}
+                          />
+                        )}
                       </td>
                     ))}
                     <td style={{ ...cellStyle, borderRight: 'none', width: '50px' }}>
@@ -353,14 +471,25 @@ const TableDataEditor = ({ name, value, onChange, disabled }) => {
                   </tr>
                 ))}
 
-                {/* Totals row - auto-calculated */}
+                {/* Totals row */}
                 {data.totals.length > 0 && (
                   <tr style={{ backgroundColor: '#1a2e1a' }}>
                     {data.totals.map((total, colIndex) => (
                       <td key={colIndex} style={{ ...cellStyle, backgroundColor: 'rgba(92, 177, 118, 0.1)' }}>
-                        <div style={{ ...totalsInputStyle, padding: '6px 8px', minHeight: '32px' }}>
-                          {total || (colIndex === 0 ? 'Итого' : '—')}
-                        </div>
+                        {isChangeCol(colIndex) ? (
+                          <span style={{
+                            ...totalsInputStyle,
+                            padding: '6px 8px',
+                            display: 'block',
+                            color: getChangeColor(total),
+                          }}>
+                            {total || '—'}
+                          </span>
+                        ) : (
+                          <div style={{ ...totalsInputStyle, padding: '6px 8px', minHeight: '32px' }}>
+                            {total || (colIndex === 0 ? 'Итого' : '—')}
+                          </div>
+                        )}
                       </td>
                     ))}
                     <td style={{ ...cellStyle, borderRight: 'none', backgroundColor: 'rgba(92, 177, 118, 0.1)' }}></td>
