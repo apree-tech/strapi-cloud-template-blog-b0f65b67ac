@@ -148,10 +148,12 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
     return transformByPlatforms(apiData);
   };
 
-  // Fetch data from analytics API
-  const fetchData = async () => {
+  // Fetch data from analytics API (accepts optional mode override)
+  const fetchData = async (modeOverride) => {
     setLoading(true);
     setError(null);
+
+    const targetMode = modeOverride || data.mode || 'by_platforms';
 
     try {
       const documentId = getDocumentId();
@@ -169,7 +171,7 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
       const result = await response.json();
       if (result.success !== false) {
         setRawApiData(result);
-        const chartData = transformData(result, data.mode);
+        const chartData = transformData(result, targetMode);
         updateValue(chartData);
       } else {
         setError(result.error || 'Не удалось загрузить данные');
@@ -182,14 +184,63 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
     }
   };
 
+  // Reconstruct raw API data from by_sales_types charts
+  const reconstructRawFromSalesCharts = (charts) => {
+    if (!charts || charts.length === 0) return null;
+    const platformCharts = charts.filter(
+      (c) => c.title !== 'TOTAL' && c.title !== 'Сумма'
+    );
+    if (platformCharts.length === 0) return null;
+    // Verify these are sales-type charts (labels are Subs/Tips/Messages)
+    const salesLabels = ['Subs', 'Tips', 'Messages'];
+    if (!platformCharts[0].labels?.every((l) => salesLabels.includes(l))) return null;
+
+    const platforms = platformCharts.map((c) => ({
+      platform: c.title,
+      subs: c.values[0] || 0,
+      tips: c.values[1] || 0,
+      messages: c.values[2] || 0,
+      total: (c.values[0] || 0) + (c.values[1] || 0) + (c.values[2] || 0),
+    }));
+
+    return {
+      current: {
+        platforms,
+        total: {
+          platform: 'Сумма',
+          subs: platforms.reduce((s, p) => s + p.subs, 0),
+          tips: platforms.reduce((s, p) => s + p.tips, 0),
+          messages: platforms.reduce((s, p) => s + p.messages, 0),
+          total: platforms.reduce((s, p) => s + p.total, 0),
+        },
+      },
+    };
+  };
+
   // Switch mode and re-transform existing data
   const switchMode = (newMode) => {
+    // Try existing raw API data first
     const apiSource = rawApiData || data._rawApiData;
     if (apiSource) {
       const chartData = transformData(apiSource, newMode);
       updateValue(chartData);
+      return;
+    }
+
+    // Try to reconstruct raw data from existing charts
+    const reconstructed = reconstructRawFromSalesCharts(data.charts);
+    if (reconstructed) {
+      setRawApiData(reconstructed);
+      const chartData = transformData(reconstructed, newMode);
+      updateValue(chartData);
+      return;
+    }
+
+    // No data to re-transform — auto-fetch from API in new mode
+    if (data.charts && data.charts.length > 0) {
+      fetchData(newMode);
     } else {
-      updateValue({ ...data, mode: newMode });
+      updateValue({ ...data, mode: newMode, charts: [] });
     }
   };
 
