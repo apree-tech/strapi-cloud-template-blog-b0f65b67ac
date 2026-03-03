@@ -171,20 +171,25 @@ const SocialMetricsTable = ({ name, value, onChange, disabled }) => {
     updateValue({ ...data, monthCount: count, metrics: adjustedMetrics, month_headers: [] });
   };
 
-  // Get month headers (actual month names, oldest to newest)
-  const getMonthHeaders = () => {
-    if (data.month_headers && data.month_headers.length >= data.monthCount) {
-      return data.month_headers.slice(0, data.monthCount).reverse();
+  // Get dateFrom from report form (reads from Strapi admin DOM)
+  const getReportDateFrom = () => {
+    const input = document.querySelector('input[name="dateFrom"]');
+    if (input && input.value) {
+      return new Date(input.value);
     }
+    return null;
+  };
 
-    // Generate month names starting from oldest to current
-    const headers = [];
-    const now = new Date();
+  // Get month headers based on report's dateFrom
+  const getMonthHeaders = () => {
     const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+    const headers = [];
+    const dateFrom = getReportDateFrom();
+    const baseDate = dateFrom || new Date();
 
-    // Start from oldest month (monthCount - 1 months ago) to current
+    // Start from oldest month to dateFrom month
     for (let i = data.monthCount - 1; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('ru-RU', { month: 'long' });
       headers.push(capitalize(monthName));
     }
