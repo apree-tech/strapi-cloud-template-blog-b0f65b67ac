@@ -64,7 +64,7 @@
         "report-components.social-media-stats",
         "report-components.revenue-table",
         "report-components.comment-block",
-        "report-components.api-chart-block"
+        "report-components.chart-auto-block"
       ]
     }
   }

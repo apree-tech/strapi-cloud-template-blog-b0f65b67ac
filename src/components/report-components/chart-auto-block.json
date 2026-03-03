@@ -1,7 +1,7 @@
 {
-  "collectionName": "components_report_components_api_chart_blocks",
+  "collectionName": "components_report_components_chart_auto_blocks",
   "info": {
-    "displayName": "api-chart-block",
+    "displayName": "chart-auto-block",
     "description": "Круговые диаграммы оборотов с загрузкой данных по API"
   },
   "options": {},

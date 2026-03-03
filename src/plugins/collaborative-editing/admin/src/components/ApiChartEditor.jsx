@@ -74,8 +74,8 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
       });
     }
 
-    // Total pie chart
-    if (current.total) {
+    // Total pie chart — only if multiple platforms
+    if (current.total && charts.length > 1) {
       charts.push({
         title: current.total.platform || 'TOTAL',
         labels: ['Subs', 'Tips', 'Messages'],
