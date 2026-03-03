@@ -10,6 +10,18 @@ const MODES = [
 
 const COLORS = ['#ec4899', '#a855f7', '#8b5cf6', '#f472b6', '#c084fc', '#a78bfa', '#f9a8d4', '#d8b4fe'];
 
+// Auto-detect mode from chart data structure
+const detectMode = (charts) => {
+  if (!charts || charts.length === 0) return 'by_platforms';
+  // Multiple charts = by_sales_types (one chart per platform)
+  if (charts.length > 1) return 'by_sales_types';
+  // Single chart with Subs/Tips/Messages labels = by_sales_types
+  const labels = charts[0]?.labels || [];
+  const salesLabels = ['Subs', 'Tips', 'Messages'];
+  if (labels.every((l) => salesLabels.includes(l))) return 'by_sales_types';
+  return 'by_platforms';
+};
+
 const ApiChartEditor = ({ name, value, onChange, disabled }) => {
   const initialData = { charts: [], mode: 'by_platforms' };
 
@@ -24,7 +36,9 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
       try {
         const parsed = typeof value === 'string' ? JSON.parse(value) : value;
         if (parsed && typeof parsed === 'object') {
-          setData({ ...parsed, mode: parsed.mode || 'by_platforms' });
+          // If mode not explicitly set, auto-detect from chart data
+          const mode = parsed.mode || detectMode(parsed.charts);
+          setData({ ...parsed, mode });
           if (parsed._rawApiData) {
             setRawApiData(parsed._rawApiData);
           }
