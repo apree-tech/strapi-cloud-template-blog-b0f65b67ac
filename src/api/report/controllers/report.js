@@ -157,6 +157,72 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
   },
 
   /**
+   * Duplicate report — create a new report based on existing one
+   * POST /api/reports/:id/duplicate
+   */
+  async duplicateReport(ctx) {
+    const { id: documentId } = ctx.params;
+
+    try {
+      // Fetch source report with all data
+      const sourceReports = await strapi.entityService.findMany('api::report.report', {
+        filters: { documentId },
+        populate: ['model', 'content_blocks', 'accounts'],
+        limit: 1,
+      });
+
+      const source = sourceReports[0];
+      if (!source) {
+        return ctx.notFound('Report not found');
+      }
+
+      // Strip IDs from content_blocks for creation
+      const cleanBlocks = (source.content_blocks || []).map((block) => {
+        const { id, ...rest } = block;
+        return rest;
+      });
+
+      // Build new report data
+      const newUuid = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+      const newData = {
+        title: `${source.title || 'Report'} (копия)`,
+        dateFrom: source.dateFrom,
+        dateTo: source.dateTo,
+        uuid: newUuid,
+        telegram_notified: false,
+        content_blocks: cleanBlocks,
+      };
+
+      // Set model relation
+      if (source.model) {
+        newData.model = typeof source.model === 'object' ? source.model.id : source.model;
+      }
+
+      // Create the new report (draft by default)
+      const created = await strapi.entityService.create('api::report.report', {
+        data: newData,
+        populate: ['model'],
+      });
+
+      return {
+        success: true,
+        message: `Отчёт продублирован: ${created.title}`,
+        report: {
+          id: created.id,
+          documentId: created.documentId,
+          title: created.title,
+        },
+      };
+    } catch (error) {
+      strapi.log.error('Error duplicating report:', error);
+      return ctx.internalServerError('Failed to duplicate report', {
+        message: 'Ошибка при дублировании отчёта',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
    * Find report from previous month for the same model
    */
   async findPreviousReport(targetReport) {

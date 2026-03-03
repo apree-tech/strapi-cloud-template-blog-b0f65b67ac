@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useFetchClient, useNotification } from '@strapi/strapi/admin';
-import { Box, Typography, Button, Flex, SingleSelect, SingleSelectOption, Loader } from '@strapi/design-system';
+import { Box, Typography, Button, Flex, SingleSelect, SingleSelectOption, Loader, Divider } from '@strapi/design-system';
 
 const CopyFromPreviousPanel = ({ documentId }) => {
   const [sources, setSources] = useState([]);
   const [selectedSource, setSelectedSource] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [loadingSources, setLoadingSources] = useState(true);
   const { get, post } = useFetchClient();
   const { toggleNotification } = useNotification();
@@ -66,9 +67,41 @@ const CopyFromPreviousPanel = ({ documentId }) => {
     }
   };
 
-  const handleAutoDetect = async () => {
-    setSelectedSource(null);
-    await handleCopy();
+  const handleDuplicate = async () => {
+    if (!documentId) return;
+
+    setDuplicating(true);
+    try {
+      const response = await post(`/api/reports/${documentId}/duplicate`);
+
+      if (response.data?.success) {
+        const newDocId = response.data.report?.documentId;
+        toggleNotification({
+          type: 'success',
+          message: response.data.message || 'Отчёт продублирован',
+        });
+
+        // Navigate to the new report
+        if (newDocId) {
+          window.location.href = `/admin/content-manager/collection-types/api::report.report/${newDocId}`;
+        }
+      } else {
+        toggleNotification({
+          type: 'warning',
+          message: response.data?.message || 'Не удалось дублировать отчёт',
+        });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message ||
+                          error.response?.data?.message ||
+                          'Ошибка при дублировании отчёта';
+      toggleNotification({
+        type: 'danger',
+        message: errorMessage,
+      });
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   if (!documentId) {
@@ -121,7 +154,7 @@ const CopyFromPreviousPanel = ({ documentId }) => {
               variant="secondary"
               onClick={handleCopy}
               loading={loading}
-              disabled={loading}
+              disabled={loading || duplicating}
               fullWidth
               size="S"
               style={{ minWidth: 0 }}
@@ -134,6 +167,20 @@ const CopyFromPreviousPanel = ({ documentId }) => {
             Нет отчётов для копирования
           </Typography>
         )}
+
+        <Divider style={{ margin: '4px 0' }} />
+
+        <Button
+          variant="tertiary"
+          onClick={handleDuplicate}
+          loading={duplicating}
+          disabled={loading || duplicating}
+          fullWidth
+          size="S"
+          style={{ minWidth: 0 }}
+        >
+          Дублировать отчёт
+        </Button>
       </Flex>
     </Box>
   );
