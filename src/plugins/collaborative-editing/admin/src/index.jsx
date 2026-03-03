@@ -9,6 +9,7 @@ import TableDataEditor from './components/TableDataEditor';
 import ChatCommentsEditor from './components/ChatCommentsEditor';
 import CopyFromPreviousPanel from './components/CopyFromPreviousPanel';
 import RevenueTableEditor from './components/RevenueTableEditor';
+import ApiChartEditor from './components/ApiChartEditor';
 
 // Panel component for Edit View sidebar
 const ActiveEditorsSidePanel = ({ document, model, collectionType }) => {
@@ -162,6 +163,24 @@ export default {
       },
       components: {
         Input: async () => ({ default: RevenueTableEditor }),
+      },
+    });
+
+    // Register custom field for api chart (pie charts from revenue API)
+    app.customFields.register({
+      name: 'api-chart',
+      pluginId: pluginId,
+      type: 'json',
+      intlLabel: {
+        id: `${pluginId}.api-chart.label`,
+        defaultMessage: 'Диаграммы оборотов',
+      },
+      intlDescription: {
+        id: `${pluginId}.api-chart.description`,
+        defaultMessage: 'Круговые диаграммы оборотов с загрузкой из API',
+      },
+      components: {
+        Input: async () => ({ default: ApiChartEditor }),
       },
     });
   },

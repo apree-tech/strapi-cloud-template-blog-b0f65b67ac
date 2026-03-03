@@ -31,6 +31,13 @@ module.exports = {
       plugin: 'collaborative-editing',
       type: 'json',
     });
+
+    // Register custom field for api chart
+    strapi.customFields.register({
+      name: 'api-chart',
+      plugin: 'collaborative-editing',
+      type: 'json',
+    });
   },
 
   bootstrap({ strapi }) {

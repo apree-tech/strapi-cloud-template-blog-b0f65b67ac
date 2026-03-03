@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_report_components_api_chart_blocks",
+  "info": {
+    "displayName": "api-chart-block",
+    "description": "Круговые диаграммы оборотов с загрузкой данных по API"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": "Оборот по платформам"
+    },
+    "data": {
+      "type": "customField",
+      "customField": "plugin::collaborative-editing.api-chart"
+    },
+    "contentWidth": {
+      "type": "enumeration",
+      "default": "w100",
+      "enum": ["w25", "w50", "w75", "w100"]
+    }
+  }
+}
