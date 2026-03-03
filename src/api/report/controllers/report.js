@@ -176,11 +176,13 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
         return ctx.notFound('Report not found');
       }
 
-      // Strip IDs from content_blocks for creation
+      // Build clean blocks: empty structure for most, social-media-stats shifts current→prev
       const cleanBlocks = (source.content_blocks || []).map((block) => {
-        const { id, ...rest } = block;
-        return rest;
-      });
+        if (block.__component === 'report-components.social-media-stats') {
+          return this.copySocialMediaStats(block);
+        }
+        return this.copyBlockStructureEmpty(block);
+      }).filter(Boolean);
 
       // Build new report data
       const newUuid = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
