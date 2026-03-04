@@ -119,32 +119,48 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
     const snapshotData = version.snapshot_data;
 
     // Get current report
-    const reports = await strapi.entityService.findMany('api::report.report', {
-      filters: { documentId: version.report_document_id },
-      limit: 1,
+    const report = await strapi.db.query('api::report.report').findOne({
+      where: { documentId: version.report_document_id },
     });
-    const report = reports?.[0] || null;
 
     if (!report) {
       throw new Error('Report not found');
     }
 
+    strapi.log.info(`[Version] Restoring v${version.version_number} for report ${version.report_document_id} (dbId=${report.id})`);
+
     // Create a backup version before restoring
-    await this.createVersion(
-      version.report_document_id,
-      [userId],
-      `${userName} (до восстановления)`,
-      false
-    );
+    try {
+      await this.createVersion(
+        version.report_document_id,
+        [userId],
+        `${userName} (до восстановления)`,
+        false
+      );
+    } catch (backupErr) {
+      strapi.log.warn(`[Version] Backup version failed (continuing restore): ${backupErr.message}`);
+    }
 
-    // Strip IDs from content_blocks to avoid conflicts during restore
-    const cleanBlocks = (snapshotData.content_blocks || []).map((block) => {
-      const { id, ...rest } = block;
-      return rest;
-    });
+    // Recursively strip all 'id' fields from nested objects/arrays
+    const stripIds = (obj) => {
+      if (Array.isArray(obj)) return obj.map(stripIds);
+      if (obj && typeof obj === 'object') {
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (key === 'id') continue;
+          result[key] = stripIds(value);
+        }
+        return result;
+      }
+      return obj;
+    };
 
-    // Restore the report data from snapshot using entityService (proper dynamic zone handling)
-    await strapi.entityService.update('api::report.report', report.documentId, {
+    const cleanBlocks = stripIds(snapshotData.content_blocks || []);
+    strapi.log.info(`[Version] Restoring ${cleanBlocks.length} blocks`);
+
+    // Use raw db query — more reliable for dynamic zone restore
+    await strapi.db.query('api::report.report').update({
+      where: { id: report.id },
       data: {
         title: snapshotData.title,
         dateFrom: snapshotData.dateFrom,
@@ -153,7 +169,7 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
       },
     });
 
-    strapi.log.info(`[Version] Restored version ${version.version_number} for report ${version.report_document_id} by ${userName}`);
+    strapi.log.info(`[Version] Restored v${version.version_number} for report ${version.report_document_id} by ${userName}`);
 
     return { success: true, restoredVersion: version.version_number };
   },
