@@ -167,7 +167,10 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
       // Fetch source report with all data
       const sourceReports = await strapi.entityService.findMany('api::report.report', {
         filters: { documentId },
-        populate: ['model', 'content_blocks', 'accounts'],
+        populate: {
+          model: true,
+          content_blocks: { populate: '*' },
+        },
         limit: 1,
       });
 
@@ -176,6 +179,8 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
         return ctx.notFound('Report not found');
       }
 
+      strapi.log.info(`[Duplicate] Source report: "${source.title}", blocks: ${(source.content_blocks || []).length}`);
+
       // Build clean blocks: empty structure for most, social-media-stats shifts current→prev
       const cleanBlocks = (source.content_blocks || []).map((block) => {
         if (block.__component === 'report-components.social-media-stats') {
@@ -183,6 +188,8 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
         }
         return this.copyBlockStructureEmpty(block);
       }).filter(Boolean);
+
+      strapi.log.info(`[Duplicate] Clean blocks built: ${cleanBlocks.length}`);
 
       // Build new report data
       const newUuid = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -195,16 +202,21 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
         content_blocks: cleanBlocks,
       };
 
-      // Set model relation
+      // Set model relation (use documentId for Strapi v5)
       if (source.model) {
-        newData.model = typeof source.model === 'object' ? source.model.id : source.model;
+        const modelId = typeof source.model === 'object' ? source.model.id : source.model;
+        newData.model = modelId;
+        strapi.log.info(`[Duplicate] Model relation set: ${modelId}`);
       }
 
       // Create the new report (draft by default)
+      strapi.log.info(`[Duplicate] Creating new report...`);
       const created = await strapi.entityService.create('api::report.report', {
         data: newData,
         populate: ['model'],
       });
+
+      strapi.log.info(`[Duplicate] Created report: ${created.documentId}`);
 
       return {
         success: true,
@@ -216,9 +228,10 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
         },
       };
     } catch (error) {
-      strapi.log.error('Error duplicating report:', error);
+      strapi.log.error('[Duplicate] Error duplicating report:', error.message);
+      strapi.log.error('[Duplicate] Stack:', error.stack);
       return ctx.internalServerError('Failed to duplicate report', {
-        message: 'Ошибка при дублировании отчёта',
+        message: `Ошибка при дублировании: ${error.message}`,
         error: error.message,
       });
     }
@@ -763,69 +776,103 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
    * Copy block structure but empty the content (for text, images, etc.)
    */
   copyBlockStructureEmpty(sourceBlock) {
-    const { id, ...blockWithoutId } = sourceBlock;
     const componentType = sourceBlock.__component;
 
-    // Handle different block types
-    if (componentType === 'report-components.text-block') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        content: '', // Empty content
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+    // Handle each block type explicitly to match its schema
+    switch (componentType) {
+      case 'report-components.text-block':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          content: '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    if (componentType === 'report-components.image-section') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        // Don't copy image/media - leave empty
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+      case 'report-components.analysis-block':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          content: '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    if (componentType === 'report-components.analysis-block') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        content: '', // Empty content
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+      case 'report-components.image-section':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    if (componentType === 'report-components.chart-block') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        // Empty chart data
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+      case 'report-components.chart-block':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    if (componentType === 'report-components.section') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+      case 'report-components.section':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    if (componentType === 'report-components.metric-group') {
-      return {
-        __component: componentType,
-        title: sourceBlock.title || '',
-        // Empty metrics
-        contentWidth: sourceBlock.contentWidth || 'w100',
-      };
-    }
+      case 'report-components.metric-group':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
 
-    // Generic fallback: copy only __component, title, and contentWidth
-    return {
-      __component: componentType,
-      title: sourceBlock.title || '',
-      contentWidth: sourceBlock.contentWidth || 'w100',
-    };
+      case 'report-components.table-data':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          headers: sourceBlock.headers || [],
+          rows: [],
+          totals: null,
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
+
+      case 'report-components.table':
+        // table-simple: has title, data (custom field), contentWidth
+        return {
+          __component: componentType,
+          title: sourceBlock.title || '',
+          data: null,
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
+
+      case 'report-components.revenue-table':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || 'Оборот',
+          data: null,
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
+
+      case 'report-components.chart-auto-block':
+        return {
+          __component: componentType,
+          title: sourceBlock.title || 'Оборот по платформам',
+          data: null,
+          contentWidth: sourceBlock.contentWidth || 'w100',
+        };
+
+      case 'report-components.comment-block':
+        // comment-block only has 'messages' field, no title/contentWidth
+        return {
+          __component: componentType,
+          messages: [],
+        };
+
+      default:
+        // Unknown type — only copy __component and known safe fields
+        const result = { __component: componentType };
+        if (sourceBlock.title !== undefined) result.title = sourceBlock.title || '';
+        if (sourceBlock.contentWidth !== undefined) result.contentWidth = sourceBlock.contentWidth || 'w100';
+        return result;
+    }
   },
 
   /**
