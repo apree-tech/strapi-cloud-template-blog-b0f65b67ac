@@ -262,6 +262,20 @@ const ApiChartEditor = ({ name, value, onChange, disabled }) => {
     const outerR = big ? 50 : 30;
     const innerR = big ? 30 : 16;
 
+    // Count non-zero values
+    const nonZero = chart.values.filter((v) => v > 0);
+
+    // Single segment = full circle (SVG arc can't draw 360°)
+    if (nonZero.length === 1) {
+      const colorIdx = chart.values.findIndex((v) => v > 0);
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={cx} cy={cy} r={outerR} fill={COLORS[colorIdx % COLORS.length]} opacity={0.85} />
+          <circle cx={cx} cy={cy} r={innerR} fill="#212134" />
+        </svg>
+      );
+    }
+
     let startAngle = -90;
     const slices = chart.values.map((val, i) => {
       const angle = (val / total) * 360;
