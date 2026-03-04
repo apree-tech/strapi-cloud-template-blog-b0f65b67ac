@@ -42,11 +42,17 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
    * Returns null if there are no changes since the last version
    */
   async createVersion(reportDocumentId, userIds, userNames, isAutoSave = true) {
-    // Get the current report data
-    const report = await strapi.db.query('api::report.report').findOne({
-      where: { documentId: reportDocumentId },
-      populate: ['content_blocks', 'model', 'accounts'],
+    // Get the current report data with deep populate for dynamic zone
+    const reports = await strapi.entityService.findMany('api::report.report', {
+      filters: { documentId: reportDocumentId },
+      populate: {
+        content_blocks: { populate: '*' },
+        model: true,
+        accounts: true,
+      },
+      limit: 1,
     });
+    const report = reports?.[0] || null;
 
     if (!report) {
       strapi.log.warn(`[Version] Report not found: ${reportDocumentId}`);
@@ -113,9 +119,11 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
     const snapshotData = version.snapshot_data;
 
     // Get current report
-    const report = await strapi.db.query('api::report.report').findOne({
-      where: { documentId: version.report_document_id },
+    const reports = await strapi.entityService.findMany('api::report.report', {
+      filters: { documentId: version.report_document_id },
+      limit: 1,
     });
+    const report = reports?.[0] || null;
 
     if (!report) {
       throw new Error('Report not found');
@@ -129,14 +137,19 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
       false
     );
 
-    // Restore the report data from snapshot
-    await strapi.db.query('api::report.report').update({
-      where: { id: report.id },
+    // Strip IDs from content_blocks to avoid conflicts during restore
+    const cleanBlocks = (snapshotData.content_blocks || []).map((block) => {
+      const { id, ...rest } = block;
+      return rest;
+    });
+
+    // Restore the report data from snapshot using entityService (proper dynamic zone handling)
+    await strapi.entityService.update('api::report.report', report.documentId, {
       data: {
         title: snapshotData.title,
         dateFrom: snapshotData.dateFrom,
         dateTo: snapshotData.dateTo,
-        content_blocks: snapshotData.content_blocks,
+        content_blocks: cleanBlocks,
       },
     });
 
