@@ -118,16 +118,7 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
 
     const snapshotData = version.snapshot_data;
 
-    // Get current report
-    const report = await strapi.db.query('api::report.report').findOne({
-      where: { documentId: version.report_document_id },
-    });
-
-    if (!report) {
-      throw new Error('Report not found');
-    }
-
-    strapi.log.info(`[Version] Restoring v${version.version_number} for report ${version.report_document_id} (dbId=${report.id})`);
+    strapi.log.info(`[Version] Restoring v${version.version_number} for report ${version.report_document_id}`);
 
     // Create a backup version before restoring
     try {
@@ -158,9 +149,9 @@ module.exports = createCoreService('api::report-version.report-version', ({ stra
     const cleanBlocks = stripIds(snapshotData.content_blocks || []);
     strapi.log.info(`[Version] Restoring ${cleanBlocks.length} blocks`);
 
-    // Use raw db query — more reliable for dynamic zone restore
-    await strapi.db.query('api::report.report').update({
-      where: { id: report.id },
+    // Use Document Service API (Strapi v5) — properly handles dynamic zones
+    await strapi.documents('api::report.report').update({
+      documentId: version.report_document_id,
       data: {
         title: snapshotData.title,
         dateFrom: snapshotData.dateFrom,

@@ -657,6 +657,7 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
         'report-components.social-media-stats',
         'report-components.revenue-table',
         'report-components.comment-block',
+        'report-components.chart-auto-block',
       ]
     >;
     createdAt: Schema.Attribute.DateTime;

@@ -17,6 +17,22 @@ export interface ReportComponentsAnalysisBlock extends Struct.ComponentSchema {
   };
 }
 
+export interface ReportComponentsChartAutoBlock extends Struct.ComponentSchema {
+  collectionName: 'components_report_components_chart_auto_blocks';
+  info: {
+    description: '\u041A\u0440\u0443\u0433\u043E\u0432\u044B\u0435 \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u044B \u043E\u0431\u043E\u0440\u043E\u0442\u043E\u0432 \u0441 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u043E\u0439 \u0434\u0430\u043D\u043D\u044B\u0445 \u043F\u043E API';
+    displayName: 'chart-auto-block';
+  };
+  attributes: {
+    contentWidth: Schema.Attribute.Enumeration<['w25', 'w50', 'w75', 'w100']> &
+      Schema.Attribute.DefaultTo<'w100'>;
+    data: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::collaborative-editing.api-chart'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'\u041E\u0431\u043E\u0440\u043E\u0442 \u043F\u043E \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0430\u043C'>;
+  };
+}
+
 export interface ReportComponentsChartBlock extends Struct.ComponentSchema {
   collectionName: 'components_report_components_chart_blocks';
   info: {
@@ -278,6 +294,7 @@ declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
       'report-components.analysis-block': ReportComponentsAnalysisBlock;
+      'report-components.chart-auto-block': ReportComponentsChartAutoBlock;
       'report-components.chart-block': ReportComponentsChartBlock;
       'report-components.comment-block': ReportComponentsCommentBlock;
       'report-components.image-item': ReportComponentsImageItem;
