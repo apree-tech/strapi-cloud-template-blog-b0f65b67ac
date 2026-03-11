@@ -36,6 +36,13 @@ module.exports = {
   async beforeUpdate(event) {
     const { data, where } = event.params;
 
+    // If password is null/undefined/empty (admin panel doesn't return private fields),
+    // remove it from the update payload to avoid overwriting the existing hash with null.
+    if (!data.password) {
+      delete data.password;
+      return;
+    }
+
     if (data.password) {
       // Check password uniqueness across all models (excluding current model)
       const allModels = await strapi.entityService.findMany('api::model.model', {
