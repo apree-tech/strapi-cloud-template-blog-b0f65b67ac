@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Flex, Typography, Button, Loader } from '@strapi/design-system';
 import { Download } from '@strapi/icons';
+import { useForm } from '@strapi/admin/strapi-admin';
 import { useDomSync } from '../hooks/useDomSync';
 
 const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
@@ -9,6 +10,8 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
     previous: { period: '', platforms: [], total: null },
   };
 
+  const dateFrom = useForm('RevenueTableEditor', (state) => state.values?.dateFrom);
+  const dateTo = useForm('RevenueTableEditor', (state) => state.values?.dateTo);
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -86,13 +89,13 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
       }
 
       // Fetch from Strapi API using documentId (server will get model from report)
-      const response = await fetch(`/api/revenue/report/${documentId}`);
+      const params = new URLSearchParams({ dateFrom: dateFrom || '', dateTo: dateTo || '' });
+      const response = await fetch(`/api/revenue/report/${documentId}?${params}`);
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        throw new Error(result.error?.message || result.error || `API error: ${response.status}`);
       }
-
-      const result = await response.json();
       console.log('[RevenueTableEditor] API result:', result);
 
       if (result.success) {
@@ -106,7 +109,7 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
       }
     } catch (err) {
       console.error('Failed to fetch revenue data:', err);
-      setError('Ошибка загрузки данных. Проверьте подключение к API.');
+      setError(err.message || 'Ошибка загрузки данных. Проверьте подключение к API.');
     } finally {
       setLoading(false);
     }
@@ -374,8 +377,8 @@ const RevenueTableEditor = ({ name, value, onChange, disabled }) => {
             borderRadius: '0 0 4px 4px',
           }}
         >
-          {renderTable(data.current, 'Текущий месяц', 'current')}
-          {renderTable(data.previous, 'Прошлый месяц', 'previous')}
+          {renderTable(data.current, data.current?.dateFrom ? 'Выбранный период' : 'Текущий месяц', 'current')}
+          {renderTable(data.previous, data.previous?.dateFrom ? 'Предыдущий период' : 'Прошлый месяц', 'previous')}
         </Flex>
       ) : (
         <Box

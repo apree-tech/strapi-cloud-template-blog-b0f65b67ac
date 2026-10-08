@@ -116,9 +116,11 @@ module.exports = {
     if (body.dateTo !== undefined) data.dateTo = body.dateTo;
 
     try {
-      // update draft, then publish so the live report reflects the change
+      // Callers refreshing a draft can explicitly preserve its unpublished status.
       await strapi.documents('api::report.report').update({ documentId, data });
-      const published = await strapi.documents('api::report.report').publish({ documentId });
+      if (body.publish !== false) {
+        await strapi.documents('api::report.report').publish({ documentId });
+      }
 
       // snapshot a manual version (best-effort)
       let versionNumber = null;
